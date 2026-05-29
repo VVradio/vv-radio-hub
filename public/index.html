@@ -566,7 +566,16 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 // ── STREAM ──
 function setSts(cls,txt){const el=document.getElementById('streamStatus');el.className='ssts '+cls;el.textContent='● '+txt;}
-function playStream(url){
+async function playStationLibrary(stationId){
+  setSts('buf','Loading tracks...');
+  try{
+    const r=await fetch('/api/public/stations/'+stationId+'/tracks');
+    const d=await r.json();
+    if(!d.tracks||!d.tracks.length){setSts('err','No tracks uploaded yet');return;}
+    const t=d.tracks[0];
+    playTrack(t.url,t.title,t.artist);
+  }catch{setSts('err','Could not load tracks');}
+}function playStream(url){
   setSts('buf','Connecting...');
   audio.src=url; audio.load();
   audio.play().then(()=>{setSts('live','Live');isPlaying=true;updBarUI();renderStations();})
@@ -611,7 +620,7 @@ function renderStations(){
     grid.appendChild(el);
   });
   grid.querySelectorAll('.bfv').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=+b.dataset.id;favs.has(id)?favs.delete(id):favs.add(id);renderStations();}));
-  grid.querySelectorAll('.bls').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const st=stations.find(s=>s.id===+b.dataset.id);if(activeSt.id===st.id&&isPlaying){stopStream();return;}activeSt=st;updBarSt(st);if(st.url)playStream(st.url);else setSts('err','No stream for this station');}));
+  grid.querySelectorAll('.bls').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const st=stations.find(s=>s.id===+b.dataset.id);if(activeSt.id===st.id&&isPlaying){stopStream();return;}activeSt=st;updBarSt(st);if(st.url)playStream(st.url);else playStationLibrary(st.id);}));
 }
 function updBarSt(s){document.getElementById('barBadge').style.background=s.bg;document.getElementById('barBadge').style.color=s.c;document.getElementById('barBadge').textContent=s.abbr;document.getElementById('barSong').textContent=s.name;document.getElementById('barMeta').textContent=s.gl+' · Live 24/7';}
 function updBarUI(){document.getElementById('barPlayIcon').innerHTML=isPlaying?`<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`:`<polygon points="5 3 19 12 5 21 5 3"/>`;}
