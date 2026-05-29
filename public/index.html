@@ -566,7 +566,33 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 // ── STREAM ──
 function setSts(cls,txt){const el=document.getElementById('streamStatus');el.className='ssts '+cls;el.textContent='● '+txt;}
+let currentLibrary = [];
+let currentTrackIndex = 0;
+
 async function playStationLibrary(stationId){
+  setSts('buf','Loading tracks...');
+  try{
+    const r=await fetch('/api/public/stations/'+stationId+'/tracks');
+    const d=await r.json();
+    if(!d.tracks||!d.tracks.length){setSts('err','No tracks uploaded yet');return;}
+    currentLibrary=d.tracks;
+    currentTrackIndex=0;
+    playTrackFromLibrary();
+  }catch{setSts('err','Could not load tracks');}
+}
+
+function playTrackFromLibrary(){
+  if(!currentLibrary.length) return;
+  const t=currentLibrary[currentTrackIndex];
+  playTrack(t.url,t.title,t.artist);
+}
+
+audio.addEventListener('ended',()=>{
+  if(currentLibrary.length>0){
+    currentTrackIndex=(currentTrackIndex+1)%currentLibrary.length;
+    playTrackFromLibrary();
+  }
+});{
   setSts('buf','Loading tracks...');
   try{
     const r=await fetch('/api/public/stations/'+stationId+'/tracks');
