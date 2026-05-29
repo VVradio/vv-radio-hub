@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variety Vibes Radio Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d1526;--sur:#162035;--sur2:#1c2a44;--bor:rgba(255,255,255,.07);--or:#e8621a;--ord:rgba(232,98,26,.15);--tx:#fff;--mu:#8a9bbf;--red:#e84040;--cbg:#1a2640;--sbg:#1e2e4a;--gr:#4caf50;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-height:100vh;font-size:14px;}
+
+  /* HEADER */
+  .hdr{background:var(--sur);border-bottom:1px solid var(--bor);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .logo{font-size:1.4rem;font-weight:800;} .logo span{color:var(--or);}
+  .logo-sub{font-size:.62rem;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .hdr-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn-o{padding:7px 13px;border:1px solid var(--bor);background:transparent;color:var(--tx);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+  .btn-o:hover{border-color:var(--or);background:var(--ord);}
+  .btn-spon{border-color:rgba(232,98,26,.4);color:var(--or);}
+  .btn-spon:hover{background:var(--or);color:#fff;border-color:var(--or);}
+
+  /* TABS */
+  .tabs{background:var(--sur);border-bottom:1px solid var(--bor);padding:0 24px;display:flex;overflow-x:auto;}
+  .tab{padding:13px 16px;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--mu);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;}
+  .tab:hover{color:var(--tx);}
+  .tab.active{color:var(--or);border-bottom-color:var(--or);font-weight:700;}
+
+  /* PAGES */
+  .page{display:none;} .page.active{display:block;}
+
+  /* STATION LAYOUT */
+  .layout{display:grid;grid-template-columns:1fr 370px;min-height:calc(100vh - 115px);}
+  @media(max-width:900px){.layout{grid-template-columns:1fr;}.ap{height:540px;border-left:none;border-top:1px solid var(--bor);}}
+
+  .main{padding:22px 20px 110px;overflow-y:auto;}
+  .sw{position:relative;margin-bottom:18px;}
+  .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--mu);pointer-events:none;}
+  .search{width:100%;background:var(--sbg);border:1px solid var(--bor);border-radius:10px;padding:12px 14px 12px 40px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;transition:border-color .15s;}
+  .search::placeholder{color:var(--mu);}
+  .search:focus{border-color:rgba(232,98,26,.4);}
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px;}
+  .pill{padding:6px 13px;border:1px solid var(--bor);background:transparent;color:var(--tx);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:500;transition:all .15s;}
+  .pill:hover{border-color:var(--or);color:var(--or);}
+  .pill.active{background:var(--or);border-color:var(--or);color:#fff;font-weight:700;}
+  .slbl{font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--or);margin-bottom:14px;}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:28px;}
+  @media(max-width:560px){.sgrid{grid-template-columns:1fr;}}
+
+  /* STATION CARDS */
+  .sc{background:var(--cbg);border:1px solid var(--bor);border-radius:13px;padding:17px;transition:all .2s;cursor:pointer;}
+  .sc:hover{border-color:rgba(232,98,26,.35);transform:translateY(-2px);}
+  .sc.ac{border-color:var(--or);box-shadow:0 0 0 1px var(--or);}
+  .sc.av{border:1px dashed rgba(232,98,26,.4);background:rgba(232,98,26,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:158px;gap:9px;}
+  .sc.av:hover{border-color:var(--or);background:rgba(232,98,26,.07);transform:translateY(-2px);}
+  .avbdg{background:var(--or);color:#fff;font-size:.6rem;font-weight:700;letter-spacing:1.5px;padding:2px 9px;border-radius:100px;text-transform:uppercase;}
+  .avtl{color:var(--or);font-size:.95rem;font-weight:700;}
+  .avpr{font-size:.75rem;color:var(--mu);}
+  .avds{color:var(--mu);font-size:.73rem;line-height:1.5;max-width:190px;}
+  .btnpkg{padding:7px 16px;border:none;background:var(--or);color:#fff;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;transition:opacity .15s;}
+  .btnpkg:hover{opacity:.85;}
+  .ct{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px;gap:8px;}
+  .ci{display:flex;align-items:center;gap:11px;}
+  .lb{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0;}
+  .cn{font-weight:700;font-size:.9rem;margin-bottom:2px;} .cg{color:var(--mu);font-size:.74rem;}
+  .ltg{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;color:var(--red);white-space:nowrap;flex-shrink:0;}
+  .ld{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 1.4s ease infinite;}
+  .npr{color:var(--mu);font-size:.8rem;margin-bottom:13px;}
+  .npr strong{color:var(--tx);font-weight:700;}
+  .cb{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .li{color:var(--mu);font-size:.76rem;white-space:nowrap;}
+  .ca{display:flex;gap:7px;align-items:center;}
+  .bfv{width:35px;height:35px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;transition:all .15s;flex-shrink:0;}
+  .bfv:hover{border-color:#e84040;color:#e84040;} .bfv.fvd{color:#e84040;border-color:#e84040;}
+  .bls{padding:7px 13px;background:transparent;border:1px solid var(--bor);color:var(--tx);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;}
+  .bls:hover{background:var(--or);border-color:var(--or);}
+  .bls.ls{background:var(--or);border-color:var(--or);}
+
+  /* QUEUE */
+  .qsec{margin-top:6px;}
+  .qlst{display:flex;flex-direction:column;gap:7px;}
+  .qi{background:var(--cbg);border:1px solid var(--bor);border-radius:10px;padding:11px 15px;display:flex;align-items:center;gap:11px;animation:fadeUp .3s ease both;}
+  .qi.pi{border-color:var(--or);background:rgba(232,98,26,.05);}
+  .qn{font-size:.68rem;color:var(--mu);font-weight:700;width:20px;text-align:center;flex-shrink:0;}
+  .qif{flex:1;min-width:0;}
+  .qs{font-weight:700;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .qm{font-size:.7rem;color:var(--mu);}
+  .qst{font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:100px;white-space:nowrap;flex-shrink:0;}
+  .qst.queued{background:rgba(138,155,191,.12);color:var(--mu);}
+  .qst.playing{background:rgba(232,98,26,.2);color:var(--or);}
+  .qemp{color:var(--mu);font-size:.8rem;text-align:center;padding:18px;background:var(--cbg);border-radius:10px;border:1px dashed var(--bor);}
+
+  /* AGENT PANEL */
+  .ap{border-left:1px solid var(--bor);background:#111e35;display:flex;flex-direction:column;height:calc(100vh - 115px);position:sticky;top:0;overflow:hidden;}
+  .ah{padding:15px 18px 11px;border-bottom:1px solid var(--bor);flex-shrink:0;}
+  .at{font-size:.92rem;font-weight:800;display:flex;align-items:center;gap:7px;margin-bottom:3px;}
+  .adot{width:7px;height:7px;border-radius:50%;background:var(--or);animation:pulse 2s ease infinite;}
+  .as{font-size:.7rem;color:var(--mu);}
+  .amodes{display:flex;gap:5px;padding:9px 13px;border-bottom:1px solid var(--bor);flex-shrink:0;}
+  .mb{flex:1;padding:6px 4px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.67rem;font-weight:600;transition:all .15s;text-align:center;}
+  .mb:hover{color:var(--tx);border-color:rgba(255,255,255,.2);}
+  .mb.active{background:var(--or);border-color:var(--or);color:#fff;}
+  .msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;}
+  .msgs::-webkit-scrollbar{width:3px;}
+  .msgs::-webkit-scrollbar-thumb{background:var(--sur2);border-radius:2px;}
+  .msg{display:flex;flex-direction:column;gap:3px;}
+  .msg.u{align-items:flex-end;} .msg.a{align-items:flex-start;}
+  .bbl{max-width:88%;padding:9px 12px;border-radius:11px;font-size:.8rem;line-height:1.55;}
+  .msg.u .bbl{background:var(--or);color:#fff;border-radius:11px 11px 2px 11px;}
+  .msg.a .bbl{background:var(--sur2);color:var(--tx);border-radius:11px 11px 11px 2px;}
+  .mt{font-size:.61rem;color:var(--mu);padding:0 3px;}
+  .plcard{background:var(--sur);border:1px solid var(--bor);border-radius:9px;padding:11px;margin-top:5px;width:100%;max-width:280px;}
+  .plct{font-size:.75rem;font-weight:700;margin-bottom:7px;color:var(--or);}
+  .plt{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--bor);}
+  .plt:last-child{border-bottom:none;}
+  .ptn{font-size:.66rem;color:var(--mu);width:14px;flex-shrink:0;}
+  .pti{flex:1;min-width:0;}
+  .pts{font-size:.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pta{font-size:.66rem;color:var(--mu);}
+  .ptd{font-size:.63rem;color:var(--mu);white-space:nowrap;flex-shrink:0;}
+  .bqt{padding:2px 7px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:6px;cursor:pointer;font-size:.63rem;font-family:'Inter',sans-serif;font-weight:600;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+  .bqt:hover{border-color:var(--or);color:var(--or);}
+  .ncard{background:var(--sur);border:1px solid var(--bor);border-radius:9px;padding:11px;margin-top:5px;width:100%;max-width:280px;}
+  .ncard:hover{border-color:rgba(232,98,26,.35);}
+  .nlbl{font-size:.6rem;color:var(--or);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+  .nhl{font-size:.78rem;font-weight:700;line-height:1.4;margin-bottom:4px;}
+  .nsm{font-size:.7rem;color:var(--mu);line-height:1.4;margin-bottom:7px;}
+  .nft{display:flex;align-items:center;justify-content:space-between;}
+  .nmt{font-size:.63rem;color:var(--mu);}
+  .brd{padding:3px 9px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:6px;cursor:pointer;font-size:.66rem;font-family:'Inter',sans-serif;font-weight:600;transition:all .15s;}
+  .brd:hover{border-color:var(--or);color:var(--or);}
+  .brd.spk{border-color:var(--or);color:var(--or);background:var(--ord);}
+  .rfc{background:var(--sur);border:1px solid var(--bor);border-radius:9px;padding:13px;margin-top:5px;width:100%;max-width:280px;}
+  .rfct{font-size:.75rem;font-weight:700;color:var(--or);margin-bottom:9px;}
+  .ri{width:100%;background:var(--sbg);border:1px solid var(--bor);border-radius:8px;padding:7px 11px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.8rem;outline:none;margin-bottom:6px;}
+  .ri::placeholder{color:var(--mu);}
+  .ri:focus{border-color:rgba(232,98,26,.4);}
+  .bsr{width:100%;padding:8px;background:var(--or);border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:700;transition:opacity .15s;}
+  .bsr:hover{opacity:.85;} .bsr:disabled{opacity:.4;cursor:not-allowed;}
+  .typi{display:flex;align-items:center;gap:4px;padding:9px 12px;background:var(--sur2);border-radius:11px 11px 11px 2px;width:fit-content;}
+  .tyd{width:5px;height:5px;border-radius:50%;background:var(--mu);animation:typing 1.2s ease infinite;}
+  .tyd:nth-child(2){animation-delay:.2s;} .tyd:nth-child(3){animation-delay:.4s;}
+  .aia{padding:11px 13px;border-top:1px solid var(--bor);flex-shrink:0;}
+  .vrow{display:flex;gap:5px;margin-bottom:7px;}
+  .vbtn{flex:1;padding:5px 4px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.67rem;font-weight:600;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:3px;}
+  .vbtn:hover{border-color:var(--or);color:var(--or);}
+  .vbtn.active{background:var(--ord);border-color:var(--or);color:var(--or);}
+  .irow{display:flex;gap:7px;}
+  .ata{flex:1;background:var(--sbg);border:1px solid var(--bor);border-radius:9px;padding:9px 13px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.83rem;outline:none;resize:none;height:38px;transition:border-color .15s;}
+  .ata::placeholder{color:var(--mu);}
+  .ata:focus{border-color:rgba(232,98,26,.4);}
+  .bsnd{width:38px;height:38px;background:var(--or);border:none;color:#fff;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s;flex-shrink:0;}
+  .bsnd:hover{opacity:.85;} .bsnd:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* MP3 LIBRARY PAGE */
+  .libpage{max-width:900px;margin:0 auto;padding:24px 22px 110px;}
+  .lib-hero{margin-bottom:28px;}
+  .lib-hero h1{font-size:1.6rem;font-weight:800;margin-bottom:6px;}
+  .lib-hero h1 span{color:var(--or);}
+  .lib-hero p{color:var(--mu);font-size:.88rem;line-height:1.55;}
+
+  /* Upload zone */
+  .upload-zone{border:2px dashed rgba(232,98,26,.35);border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(232,98,26,.02);margin-bottom:24px;position:relative;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--or);background:rgba(232,98,26,.06);}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .uz-icon{font-size:2.2rem;margin-bottom:10px;}
+  .uz-title{font-size:1rem;font-weight:700;margin-bottom:4px;}
+  .uz-sub{font-size:.78rem;color:var(--mu);}
+
+  /* Upload form */
+  .uform{background:var(--sur);border:1px solid var(--bor);border-radius:13px;padding:20px;margin-bottom:24px;display:none;}
+  .uform.show{display:block;}
+  .uform h3{font-size:.88rem;font-weight:700;margin-bottom:14px;color:var(--or);}
+  .uform-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  @media(max-width:560px){.uform-grid{grid-template-columns:1fr;}}
+  .ufg{display:flex;flex-direction:column;gap:5px;}
+  .ufl{font-size:.72rem;font-weight:700;color:var(--mu);}
+  .ufi{background:var(--sbg);border:1px solid var(--bor);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.83rem;outline:none;}
+  .ufi::placeholder{color:var(--mu);}
+  .ufi:focus{border-color:rgba(232,98,26,.4);}
+  .uprog{background:var(--sur2);border-radius:6px;height:6px;overflow:hidden;margin-bottom:12px;display:none;}
+  .uprog.show{display:block;}
+  .uprog-bar{height:100%;background:var(--or);border-radius:6px;transition:width .3s;}
+  .ufiles-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:120px;overflow-y:auto;}
+  .ufile-item{display:flex;align-items:center;gap:10px;background:var(--sbg);border-radius:8px;padding:8px 12px;}
+  .ufile-name{flex:1;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ufile-size{font-size:.68rem;color:var(--mu);white-space:nowrap;}
+  .ufile-rm{background:none;border:none;color:var(--mu);cursor:pointer;font-size:1rem;padding:0 2px;transition:color .15s;}
+  .ufile-rm:hover{color:var(--red);}
+  .btn-upload{padding:10px 22px;background:var(--or);border:none;color:#fff;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.85rem;font-weight:700;transition:opacity .15s;}
+  .btn-upload:hover{opacity:.85;} .btn-upload:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* Track library grid */
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+  .tcard{background:var(--cbg);border:1px solid var(--bor);border-radius:12px;padding:15px;transition:all .18s;}
+  .tcard:hover{border-color:rgba(232,98,26,.3);transform:translateY(-2px);}
+  .tcard-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .tcard-icon{width:40px;height:40px;border-radius:9px;background:linear-gradient(135deg,var(--or),#c04a10);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+  .tcard-title{font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tcard-artist{font-size:.73rem;color:var(--mu);}
+  .tcard-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tcard-genre{font-size:.65rem;background:rgba(232,98,26,.12);color:var(--or);padding:2px 8px;border-radius:100px;font-weight:600;}
+  .tcard-size{font-size:.65rem;color:var(--mu);}
+  .tcard-actions{display:flex;gap:7px;}
+  .btn-tplay{flex:1;padding:7px;background:var(--or);border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:700;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .btn-tplay:hover{opacity:.85;}
+  .btn-tq{flex:1;padding:7px;background:transparent;border:1px solid var(--bor);color:var(--tx);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:600;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .btn-tq:hover{border-color:var(--or);color:var(--or);}
+  .btn-tdel{width:32px;height:32px;background:transparent;border:1px solid var(--bor);color:var(--mu);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .15s;flex-shrink:0;}
+  .btn-tdel:hover{border-color:var(--red);color:var(--red);}
+  .lib-empty{text-align:center;padding:40px;color:var(--mu);}
+  .lib-empty p{font-size:.88rem;margin-top:8px;}
+
+  /* SUBMIT PAGE */
+  .pc{max-width:700px;margin:0 auto;padding:28px 22px 110px;}
+  .ph{text-align:center;margin-bottom:32px;}
+  .ph h1{font-size:1.7rem;font-weight:800;margin-bottom:7px;}
+  .ph h1 span{color:var(--or);}
+  .ph p{color:var(--mu);font-size:.9rem;line-height:1.6;}
+  .fcard{background:var(--sur);border:1px solid var(--bor);border-radius:15px;padding:26px;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:540px){.fgrid{grid-template-columns:1fr;}}
+  .fg{display:flex;flex-direction:column;gap:5px;} .fg.full{grid-column:1/-1;}
+  .fl{font-size:.75rem;font-weight:700;color:var(--mu);}
+  .fi,.fsl,.fta{background:var(--sbg);border:1px solid var(--bor);border-radius:9px;padding:10px 13px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.86rem;outline:none;transition:border-color .15s;width:100%;}
+  .fi::placeholder,.fta::placeholder{color:var(--mu);}
+  .fi:focus,.fsl:focus,.fta:focus{border-color:rgba(232,98,26,.5);}
+  .fsl{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a9bbf' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;}
+  .fsl option{background:var(--sur2);}
+  .fta{resize:vertical;min-height:84px;}
+  .fdiv{grid-column:1/-1;border:none;border-top:1px solid var(--bor);margin:6px 0;}
+  .pplan{grid-column:1/-1;}
+  .pplt{font-size:.75rem;font-weight:700;color:var(--mu);letter-spacing:.5px;margin-bottom:11px;}
+  .plans-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;}
+  .popt{border:1px solid var(--bor);border-radius:9px;padding:11px 8px;cursor:pointer;transition:all .15s;position:relative;text-align:center;}
+  .popt:hover{border-color:var(--or);}
+  .popt.sel{border-color:var(--or);background:var(--ord);}
+  .popt input{position:absolute;opacity:0;width:0;height:0;}
+  .pem{font-size:1.2rem;display:block;margin-bottom:3px;}
+  .pnm{font-size:.74rem;font-weight:700;display:block;margin-bottom:2px;}
+  .ppr{font-size:.78rem;color:var(--or);font-weight:800;}
+  .pbdg{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--or);color:#fff;font-size:.52rem;font-weight:700;padding:2px 7px;border-radius:100px;white-space:nowrap;letter-spacing:1px;}
+  .bsub{width:100%;padding:12px;background:var(--or);border:none;color:#fff;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:700;transition:opacity .15s;margin-top:7px;display:flex;align-items:center;justify-content:center;gap:7px;}
+  .bsub:hover{opacity:.88;}
+  .fnote{font-size:.7rem;color:var(--mu);text-align:center;margin-top:9px;line-height:1.6;}
+  .fnote a{color:var(--or);text-decoration:none;}
+  .smsg{background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.3);border-radius:11px;padding:18px;text-align:center;display:none;}
+  .smsg.show{display:block;}
+  .smsg h3{color:var(--gr);margin-bottom:5px;}
+  .smsg p{color:var(--mu);font-size:.83rem;}
+
+  /* SPONSOR PAGE */
+  .sph{text-align:center;padding:36px 22px 28px;max-width:700px;margin:0 auto;}
+  .sph h1{font-size:1.7rem;font-weight:800;margin-bottom:9px;}
+  .sph h1 span{color:var(--or);}
+  .sph p{color:var(--mu);line-height:1.65;font-size:.9rem;max-width:540px;margin:0 auto 22px;}
+  .bvs{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;background:var(--or);color:#fff;border-radius:9px;font-weight:700;font-size:.9rem;text-decoration:none;transition:opacity .15s;}
+  .bvs:hover{opacity:.85;}
+  .prsec{padding:0 22px 110px;max-width:960px;margin:0 auto;}
+  .prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+  .prc{background:var(--cbg);border:1px solid var(--bor);border-radius:15px;padding:22px;position:relative;transition:all .2s;}
+  .prc:hover{transform:translateY(-3px);border-color:rgba(232,98,26,.3);}
+  .prc.pop{border-color:var(--or);box-shadow:0 0 0 1px var(--or);}
+  .popbdg{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--or);color:#fff;font-size:.62rem;font-weight:700;padding:3px 12px;border-radius:100px;letter-spacing:1.5px;white-space:nowrap;}
+  .pic{font-size:1.7rem;margin-bottom:11px;display:block;}
+  .ptl{font-size:.97rem;font-weight:800;margin-bottom:3px;}
+  .pcost{font-size:1.7rem;font-weight:800;color:var(--or);margin-bottom:14px;}
+  .pcost span{font-size:.82rem;color:var(--mu);font-weight:400;}
+  .pfl{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+  .pfl li{font-size:.8rem;color:var(--mu);display:flex;align-items:flex-start;gap:7px;line-height:1.4;}
+  .pfl li::before{content:'✓';color:var(--or);font-weight:700;flex-shrink:0;margin-top:1px;}
+  .bpar{display:block;width:100%;padding:10px;background:transparent;border:1px solid var(--bor);color:var(--tx);border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.83rem;font-weight:700;text-align:center;text-decoration:none;transition:all .15s;}
+  .bpar:hover{background:var(--or);border-color:var(--or);}
+  .prc.pop .bpar{background:var(--or);border-color:var(--or);}
+  .prc.pop .bpar:hover{opacity:.85;}
+
+  /* PLAYER BAR */
+  .pbar{position:fixed;bottom:0;left:0;right:0;background:rgba(13,21,38,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bor);padding:11px 22px;display:flex;align-items:center;gap:14px;z-index:100;}
+  .pbdg{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.73rem;flex-shrink:0;}
+  .pinfo{flex:1;min-width:0;}
+  .psng{font-weight:700;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pmta{font-size:.7rem;color:var(--mu);}
+  .ssts{font-size:.63rem;margin-top:2px;}
+  .ssts.live{color:var(--gr);} .ssts.buf{color:var(--or);} .ssts.err{color:var(--red);} .ssts.idl{color:var(--mu);}
+  .pctl{display:flex;align-items:center;gap:7px;}
+  .bct{width:33px;height:33px;background:transparent;border:none;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .15s;}
+  .bct:hover{color:var(--tx);}
+  .bpb{width:40px;height:40px;background:var(--or);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px;box-shadow:0 0 16px rgba(232,98,26,.4);transition:opacity .15s;}
+  .bpb:hover{opacity:.85;}
+  .volb{display:flex;align-items:center;gap:7px;color:var(--mu);}
+  .volr{-webkit-appearance:none;width:88px;height:3px;background:var(--sur2);border-radius:2px;outline:none;cursor:pointer;accent-color:var(--or);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes typing{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @media(max-width:560px){.volb{display:none;}.pbar{padding:9px 13px;gap:10px;}.hdr{padding:13px 15px;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="logo">Variety Vibes <span>Radio Hub</span></div>
+    <div class="logo-sub">Broadcasting Worldwide 24/7</div>
+  </div>
+  <div class="hdr-btns">
+    <button class="btn-o">♥ Favorites</button>
+    <a class="btn-o btn-spon" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">🤝 Become a Sponsor</a>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" data-page="stations">All stations</button>
+  <button class="tab" data-page="library">🎵 MP3 Library</button>
+  <button class="tab" data-page="submit">Submit a station</button>
+  <button class="tab" data-page="sponsor">Sponsor a spot</button>
+</div>
+
+<!-- PAGE: STATIONS -->
+<div class="page active" id="page-stations">
+  <div class="layout">
+    <div class="main">
+      <div class="sw">
+        <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search" id="searchInput" type="text" placeholder="Search stations...">
+      </div>
+      <div class="pills" id="genrePills">
+        <button class="pill active" data-genre="all">All</button>
+        <button class="pill" data-genre="indie">Indie / Multi-genre</button>
+        <button class="pill" data-genre="hiphop">Hip Hop / Rap</button>
+        <button class="pill" data-genre="electronic">Electronic / Dance</button>
+        <button class="pill" data-genre="gospel">Gospel / Christian</button>
+        <button class="pill" data-genre="rnb">R&B / Soul</button>
+        <button class="pill" data-genre="pop">Pop / Top 40</button>
+        <button class="pill" data-genre="country">Country</button>
+        <button class="pill" data-genre="rock">Rock</button>
+      </div>
+      <div class="slbl">Live Now</div>
+      <div class="sgrid" id="stationsGrid"></div>
+      <div class="qsec">
+        <div class="slbl" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span>Request Queue <span id="queueCount" style="opacity:.5;font-weight:400;font-size:.66rem;"></span></span>
+          <button onclick="clearQueue()" style="font-size:.66rem;color:var(--mu);background:none;border:1px solid var(--bor);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:'Inter',sans-serif;">Clear all</button>
+        </div>
+        <div class="qlst" id="queueList"><div class="qemp">No requests yet — use the AI DJ to queue a song!</div></div>
+      </div>
+    </div>
+
+    <!-- AI AGENT -->
+    <div class="ap">
+      <div class="ah">
+        <div class="at"><div class="adot"></div>VV AI Agent</div>
+        <div class="as">Requests · Playlists · News · Voice DJ</div>
+      </div>
+      <div class="amodes">
+        <button class="mb active" data-mode="chat">💬 Chat</button>
+        <button class="mb" data-mode="request">🎵 Request</button>
+        <button class="mb" data-mode="playlist">📋 Playlist</button>
+        <button class="mb" data-mode="news">📰 News</button>
+      </div>
+      <div class="msgs" id="agentMsgs"></div>
+      <div class="aia">
+        <div class="vrow">
+          <button class="vbtn" id="btnDJ">🎙️ DJ</button>
+          <button class="vbtn" id="btnAnc">📻 Anchor</button>
+          <button class="vbtn" id="btnStop">⏹ Stop</button>
+        </div>
+        <div class="irow">
+          <textarea class="ata" id="agentInput" placeholder="Chat with VV Agent..." rows="1"></textarea>
+          <button class="bsnd" id="sendBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: MP3 LIBRARY -->
+<div class="page" id="page-library">
+  <div class="libpage">
+    <div class="lib-hero">
+      <h1>🎵 MP3 <span>Library</span></h1>
+      <p>Upload your MP3s to Cloudflare R2 — they'll be stored permanently and available for playback and song requests. Drag and drop up to 20 files at once (50MB each).</p>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.flac,.aac,.m4a">
+      <div class="uz-icon">⬆️</div>
+      <div class="uz-title">Drop MP3s here or click to browse</div>
+      <div class="uz-sub">MP3, WAV, FLAC, AAC, M4A · Up to 50MB each · Max 20 files at once</div>
+    </div>
+
+    <!-- Upload form (shown when files selected) -->
+    <div class="uform" id="uploadForm">
+      <h3>📋 Track Details <span id="fileCountLabel" style="font-weight:400;color:var(--mu);"></span></h3>
+      <div class="uform-grid">
+        <div class="ufg"><label class="ufl">Default Title (optional)</label><input class="ufi" id="uTitle" placeholder="Leave blank to use filename"></div>
+        <div class="ufg"><label class="ufl">Artist</label><input class="ufi" id="uArtist" placeholder="Artist name"></div>
+        <div class="ufg"><label class="ufl">Genre</label>
+          <select class="ufi" id="uGenre" style="cursor:pointer;">
+            <option value="Various">Various</option>
+            <option>Hip Hop / Rap</option><option>R&B / Soul</option><option>Pop / Top 40</option>
+            <option>Electronic / Dance</option><option>Gospel / Christian</option>
+            <option>Country</option><option>Rock</option><option>Jazz / Blues</option><option>Latin</option>
+          </select>
+        </div>
+      </div>
+      <div class="ufiles-list" id="uFilesList"></div>
+      <div class="uprog" id="uprog"><div class="uprog-bar" id="uprogBar" style="width:0%"></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn-upload" id="btnUpload">⬆️ Upload to R2</button>
+        <button onclick="cancelUpload()" style="padding:9px 16px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;">Cancel</button>
+        <span id="uploadStatus" style="font-size:.78rem;color:var(--mu);flex:1;"></span>
+      </div>
+    </div>
+
+    <!-- Library grid -->
+    <div class="slbl" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+      <span>Your Tracks <span id="trackCount" style="opacity:.5;font-weight:400;font-size:.68rem;"></span></span>
+      <button onclick="loadTracks()" style="font-size:.68rem;color:var(--mu);background:none;border:1px solid var(--bor);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:'Inter',sans-serif;">↻ Refresh</button>
+    </div>
+    <div class="tgrid" id="trackGrid">
+      <div class="lib-empty"><div style="font-size:2rem">🎵</div><p>No tracks uploaded yet.<br>Add your MP3s above to get started.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SUBMIT STATION -->
+<div class="page" id="page-submit">
+  <div class="pc">
+    <div class="ph">
+      <h1>Submit Your <span>Radio Station</span></h1>
+      <p>Join the Variety Vibes Radio Hub network and reach thousands of listeners worldwide. Select a plan and fill out your details — our team reviews within 48 hours.</p>
+    </div>
+    <div class="fcard">
+      <div id="submitForm">
+        <div class="fgrid">
+          <div class="fg"><label class="fl">Station Name *</label><input class="fi" id="sName" placeholder="e.g. Deep House Nation" type="text"></div>
+          <div class="fg"><label class="fl">Genre / Format *</label>
+            <select class="fsl" id="sGenre"><option value="">Select genre...</option><option>Indie / Multi-genre</option><option>Hip Hop / Rap</option><option>Electronic / Dance</option><option>Gospel / Christian</option><option>R&B / Soul</option><option>Pop / Top 40</option><option>Country</option><option>Rock</option><option>Jazz / Blues</option><option>Latin</option><option>World Music</option><option>Other</option></select>
+          </div>
+          <div class="fg"><label class="fl">Contact Name *</label><input class="fi" id="sContact" placeholder="Your full name" type="text"></div>
+          <div class="fg"><label class="fl">Email Address *</label><input class="fi" id="sEmail" placeholder="you@example.com" type="email"></div>
+          <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="sPhone" placeholder="(optional)" type="tel"></div>
+          <div class="fg"><label class="fl">Website / Social</label><input class="fi" id="sWebsite" placeholder="https://..." type="url"></div>
+          <div class="fg full"><label class="fl">Stream URL</label><input class="fi" id="sStream" placeholder="https://yourstream.com/listen" type="url"></div>
+          <div class="fg full"><label class="fl">Station Description</label><textarea class="fta" id="sDesc" placeholder="Tell us about your station — what you play, your audience, your mission..."></textarea></div>
+          <hr class="fdiv">
+          <div class="pplan">
+            <div class="pplt">SELECT YOUR SPOT PLAN *</div>
+            <div class="plans-row" id="planPicker">
+              <label class="popt" onclick="selPlan(this,'Community Sponsor','$50/mo')"><input type="radio" name="plan"><span class="pem">🤝</span><span class="pnm">Community</span><span class="ppr">$50/mo</span></label>
+              <label class="popt" onclick="selPlan(this,'Bronze Partner','$100/mo')"><input type="radio" name="plan"><span class="pem">🥉</span><span class="pnm">Bronze</span><span class="ppr">$100/mo</span></label>
+              <label class="popt" onclick="selPlan(this,'Silver Sponsor','$250/mo')"><input type="radio" name="plan"><div class="pbdg">⭐ POPULAR</div><span class="pem">🥈</span><span class="pnm">Silver</span><span class="ppr">$250/mo</span></label>
+              <label class="popt" onclick="selPlan(this,'Gold Sponsor','$500/mo')"><input type="radio" name="plan"><span class="pem">🥇</span><span class="pnm">Gold</span><span class="ppr">$500/mo</span></label>
+              <label class="popt" onclick="selPlan(this,'Platinum Partner','$1,000/mo')"><input type="radio" name="plan"><span class="pem">💎</span><span class="pnm">Platinum</span><span class="ppr">$1K/mo</span></label>
+              <label class="popt" onclick="selPlan(this,'Elite Media Partner','$2,000/mo')"><input type="radio" name="plan"><span class="pem">👑</span><span class="pnm">Elite</span><span class="ppr">$2K/mo</span></label>
+            </div>
+          </div>
+          <div class="fg full"><label class="fl">Anything else?</label><textarea class="fta" id="sNotes" placeholder="Additional info, questions..."></textarea></div>
+        </div>
+        <button class="bsub" onclick="submitStation()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Station Application
+        </button>
+        <p class="fnote">By submitting you agree to our <a href="https://varietyvibesradio.com/terms-of-service/" target="_blank">Terms of Service</a>. Questions? <a href="https://varietyvibesradio.com/contact/" target="_blank">Contact us</a>.</p>
+      </div>
+      <div class="smsg" id="successMsg"><h3>🎉 Application Received!</h3><p>Thanks for submitting <strong id="successName"></strong>! We'll be in touch within 48 hours.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SPONSOR -->
+<div class="page" id="page-sponsor">
+  <div class="sph">
+    <h1>Sponsor a <span>Spot</span></h1>
+    <p>Partner with Variety Vibes Radio & TV — connect your brand with music, culture, and a growing global audience across online radio, Roku, Firestick TV, social media, and mobile.</p>
+    <a class="bvs" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">🌐 View Full Sponsorship Page →</a>
+  </div>
+  <div class="prsec">
+    <div class="slbl" style="text-align:center;margin-bottom:22px;">Sponsorship & Partnership Plans</div>
+    <div class="prgrid">
+      <div class="prc"><span class="pic">🤝</span><div class="ptl">Community Sponsor</div><div class="pcost">$50<span>/mo</span></div><ul class="pfl"><li>Business name on website</li><li>Social media mention</li><li>Community recognition</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+      <div class="prc"><span class="pic">🥉</span><div class="ptl">Bronze Partner</div><div class="pcost">$100<span>/mo</span></div><ul class="pfl"><li>Website sponsor listing</li><li>1 social promo/month</li><li>On-air recognition</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+      <div class="prc pop"><div class="popbdg">⭐ MOST POPULAR</div><span class="pic">🥈</span><div class="ptl">Silver Sponsor</div><div class="pcost">$250<span>/mo</span></div><ul class="pfl"><li>Featured website placement</li><li>2 social promos/month</li><li>Radio sponsor mention</li><li>Business spotlight</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+      <div class="prc"><span class="pic">🥇</span><div class="ptl">Gold Sponsor</div><div class="pcost">$500<span>/mo</span></div><ul class="pfl"><li>Sponsor banner placement</li><li>4 social promos/month</li><li>Radio sponsor mentions</li><li>Website feature</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+      <div class="prc"><span class="pic">💎</span><div class="ptl">Platinum Partner</div><div class="pcost">$1,000<span>/mo</span></div><ul class="pfl"><li>Featured sponsor placement</li><li>Social promo campaign</li><li>Radio mentions</li><li>TV exposure — VV TV</li><li>Monthly spotlight</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+      <div class="prc"><span class="pic">👑</span><div class="ptl">Elite Media Partner</div><div class="pcost">$2,000<span>/mo</span></div><ul class="pfl"><li>Premium sponsor placement</li><li>Radio + TV promotion</li><li>Social media campaign</li><li>Sponsored segment</li><li>Spotlight interview</li></ul><a class="bpar" href="https://varietyvibesradio.com/station-sponsors/" target="_blank">Partner With Us</a></div>
+    </div>
+    <p style="text-align:center;color:var(--mu);font-size:.8rem;margin-top:24px;line-height:1.6;">Questions? <a href="https://varietyvibesradio.com/contact/" target="_blank" style="color:var(--or);text-decoration:none;">Contact the Variety Vibes team →</a></p>
+  </div>
+</div>
+
+<!-- PLAYER BAR -->
+<div class="pbar">
+  <div class="pbdg" id="barBadge" style="background:#2a1a4a;color:#c47bff">VV</div>
+  <div class="pinfo">
+    <div class="psng" id="barSong">Variety Vibes Radio</div>
+    <div class="pmta" id="barMeta">Indie / Multi-genre · Live 24/7</div>
+    <div class="ssts idl" id="streamStatus">● Click Listen to tune in</div>
+  </div>
+  <div class="pctl">
+    <button class="bct" id="barPrev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+    <button class="bpb" id="barPlay"><svg id="barPlayIcon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+    <button class="bct" id="barNext"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+  </div>
+  <div class="volb">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    <input type="range" class="volr" id="volSlider" value="80" min="0" max="100">
+  </div>
+</div>
+
+<audio id="radioAudio" crossorigin="anonymous" preload="none"></audio>
+
+<script>
+const API = ''; // same origin — backend serves this file
+const VVR_STREAM = 'https://hello.citrus3.com:2020/stream/varietyvibesradio';
+const VVR_EMBED  = 'https://hello.citrus3.com:2020/AudioPlayer/varietyvibesradio?mount=&';
+
+const stations = [
+  {id:1,abbr:'VV',name:'Variety Vibes Radio',genre:'indie',gl:'Indie / Multi-genre',song:'Artist submissions 24/7',listeners:'1.2k',bg:'#2a1a4a',c:'#c47bff',url:VVR_STREAM},
+  {id:2,abbr:'HH',name:'Hip Hop Heat',genre:'hiphop',gl:'Hip Hop / Rap',song:'Latest Hip Hop Hits',listeners:'3.1k',bg:'#3d1414',c:'#e87b7b',url:''},
+  {id:3,abbr:'DH',name:'Deep House Nation',genre:'electronic',gl:'Electronic / Dance',song:'Deep House Mix',listeners:'2.6k',bg:'#1a1a4a',c:'#7b9be8',url:''},
+  {id:4,abbr:'GG',name:'Gospel Glory',genre:'gospel',gl:'Gospel / Christian',song:'Inspirational Gospel',listeners:'890',bg:'#143d22',c:'#7be87b',url:''},
+  {id:5,abbr:'OS',name:'Old School Jams',genre:'rnb',gl:'R&B / Soul',song:'Classic R&B & Soul',listeners:'1.7k',bg:'#3d1414',c:'#e87b7b',url:''},
+  {id:6,abbr:'SV',name:'Soul Vibes R&B',genre:'rnb',gl:'R&B / Soul',song:"Today's Best R&B",listeners:'2.2k',bg:'#3d1414',c:'#e87b7b',url:''},
+  {id:7,abbr:'PN',name:'Pop Nation',genre:'pop',gl:'Pop / Top 40',song:'Top 40 Hits',listeners:'5.1k',bg:'#1a2a4a',c:'#7bc0e8',url:''},
+  {id:8,abbr:'CR',name:'Country Roads FM',genre:'country',gl:'Country',song:'Classic & New Country',listeners:'1.4k',bg:'#1e2e14',c:'#a0c870',url:''},
+  {id:9,abbr:'RF',name:'Rock Frequency',genre:'rock',gl:'Rock',song:'Classic Rock Hits',listeners:'2.8k',bg:'#2e1e14',c:'#e8a87b',url:''},
+];
+
+let activeGenre='all', activeSt=stations[0], isPlaying=false;
+let favs=new Set(), search='', agentMode='chat', agentBusy=false;
+let songQueue=[], selectedPlan='', pendingFiles=[];
+let ws=null;
+const audio=document.getElementById('radioAudio');
+
+// ── WEBSOCKET ──
+function connectWS(){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(`${proto}//${location.host}`);
+  ws.onopen=()=>console.log('WS connected');
+  ws.onclose=()=>setTimeout(connectWS,3000);
+  ws.onerror=()=>{};
+  ws.onmessage=e=>{
+    try{
+      const {type,payload}=JSON.parse(e.data);
+      if(type==='init'||type==='queue_update'){ songQueue=payload.queue||[]; renderQueue(); }
+      if(type==='now_playing'&&payload.track){ addMsg('a',`🎙️ Now playing: <strong>${payload.track.song}</strong> by ${payload.track.artist}!`); speak(`Now playing ${payload.track.song} by ${payload.track.artist}.`,'dj'); }
+      if(type==='library_update'){ renderTracks(payload.tracks||[]); }
+      if(type==='queue_update'&&payload.newRequest){ const r=payload.newRequest; addMsg('a',`✅ <strong>${r.song}</strong> queued! ${r.djMessage||''}`); if(r.djMessage) speak(r.djMessage,'dj'); }
+    }catch{}
+  };
+}
+
+// ── TABS ──
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+t.dataset.page).classList.add('active');
+  if(t.dataset.page==='library') loadTracks();
+}));
+
+// ── STREAM ──
+function setSts(cls,txt){const el=document.getElementById('streamStatus');el.className='ssts '+cls;el.textContent='● '+txt;}
+function playStream(url){
+  setSts('buf','Connecting...');
+  audio.src=url; audio.load();
+  audio.play().then(()=>{setSts('live','Live');isPlaying=true;updBarUI();renderStations();})
+  .catch(()=>{audio.removeAttribute('crossorigin');audio.src=url;audio.load();
+    audio.play().then(()=>{setSts('live','Live');isPlaying=true;updBarUI();renderStations();})
+    .catch(()=>{setSts('err','Opening popup player');setTimeout(()=>{const w=window.open(VVR_EMBED,'vvr','width=320,height=110,toolbar=no');if(!w){setSts('err','Allow popups');}else{setSts('live','Playing in popup ↗');isPlaying=true;updBarUI();renderStations();}},400);});
+  });
+}
+function stopStream(){audio.pause();audio.src='';isPlaying=false;setSts('idl','Paused');updBarUI();renderStations();}
+function playTrack(url,title,artist){
+  setSts('buf','Loading...');
+  document.getElementById('barSong').textContent=title;
+  document.getElementById('barMeta').textContent=artist+' · Library track';
+  document.getElementById('barBadge').style.background='#1a2a3a';
+  document.getElementById('barBadge').style.color='var(--or)';
+  document.getElementById('barBadge').textContent='▶';
+  audio.src=url; audio.load();
+  audio.play().then(()=>{setSts('live','Playing');isPlaying=true;updBarUI();}).catch(()=>setSts('err','Playback error'));
+}
+audio.addEventListener('playing',()=>{setSts('live','Live');isPlaying=true;updBarUI();renderStations();});
+audio.addEventListener('waiting',()=>setSts('buf','Buffering...'));
+audio.addEventListener('pause',()=>{setSts('idl','Paused');isPlaying=false;updBarUI();renderStations();});
+audio.addEventListener('error',()=>{setTimeout(()=>{const w=window.open(VVR_EMBED,'vvr','width=320,height=110,toolbar=no');if(!w)setSts('err','Allow popups');else{setSts('live','In popup ↗');isPlaying=true;updBarUI();}},300);});
+document.getElementById('volSlider').addEventListener('input',e=>audio.volume=e.target.value/100);
+audio.volume=0.8;
+
+// ── STATIONS ──
+function renderStations(){
+  const grid=document.getElementById('stationsGrid'); grid.innerHTML='';
+  const f=stations.filter(s=>(activeGenre==='all'||s.genre===activeGenre)&&(s.name.toLowerCase().includes(search)||s.gl.toLowerCase().includes(search)));
+  f.forEach(s=>{
+    const isAc=s.id===activeSt.id;
+    const card=document.createElement('div'); card.className='sc'+(isAc?' ac':'');
+    card.innerHTML=`<div class="ct"><div class="ci"><div class="lb" style="background:${s.bg};color:${s.c}">${s.abbr}</div><div><div class="cn">${s.name}</div><div class="cg">${s.gl}</div></div></div><div class="ltg"><div class="ld"></div>LIVE</div></div><div class="npr">Now playing: <strong>${s.song}</strong></div><div class="cb"><div class="li">${s.listeners} listeners</div><div class="ca"><button class="bfv${favs.has(s.id)?' fvd':''}" data-id="${s.id}">♥</button><button class="bls${isAc&&isPlaying?' ls':''}" data-id="${s.id}">${isAc&&isPlaying?'⏸ Pause':'▶ Listen'}</button></div></div>`;
+    grid.appendChild(card);
+  });
+  const spots=[{p:'$50/mo'},{p:'$100+/mo'}];
+  spots.forEach(sp=>{
+    const el=document.createElement('div'); el.className='sc av';
+    el.innerHTML=`<div class="avbdg">Available Spot</div><div class="avtl">Your station here</div><div class="avpr">Starting at ${sp.p}</div><div class="avds">Reach thousands of listeners on Variety Vibes Radio Hub.</div><button class="btnpkg">View Packages</button>`;
+    el.querySelector('.btnpkg').addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab')[3].classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-sponsor').classList.add('active');});
+    grid.appendChild(el);
+  });
+  grid.querySelectorAll('.bfv').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=+b.dataset.id;favs.has(id)?favs.delete(id):favs.add(id);renderStations();}));
+  grid.querySelectorAll('.bls').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const st=stations.find(s=>s.id===+b.dataset.id);if(activeSt.id===st.id&&isPlaying){stopStream();return;}activeSt=st;updBarSt(st);if(st.url)playStream(st.url);else setSts('err','No stream for this station');}));
+}
+function updBarSt(s){document.getElementById('barBadge').style.background=s.bg;document.getElementById('barBadge').style.color=s.c;document.getElementById('barBadge').textContent=s.abbr;document.getElementById('barSong').textContent=s.name;document.getElementById('barMeta').textContent=s.gl+' · Live 24/7';}
+function updBarUI(){document.getElementById('barPlayIcon').innerHTML=isPlaying?`<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`:`<polygon points="5 3 19 12 5 21 5 3"/>`;}
+document.getElementById('barPlay').addEventListener('click',()=>{if(isPlaying)stopStream();else{activeSt=stations[0];updBarSt(activeSt);playStream(VVR_STREAM);}});
+document.getElementById('barNext').addEventListener('click',()=>{const i=stations.indexOf(activeSt);activeSt=stations[(i+1)%stations.length];updBarSt(activeSt);if(activeSt.url)playStream(activeSt.url);});
+document.getElementById('barPrev').addEventListener('click',()=>{const i=stations.indexOf(activeSt);activeSt=stations[(i-1+stations.length)%stations.length];updBarSt(activeSt);if(activeSt.url)playStream(activeSt.url);});
+document.getElementById('genrePills').addEventListener('click',e=>{if(e.target.classList.contains('pill')){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));e.target.classList.add('active');activeGenre=e.target.dataset.genre;renderStations();}});
+document.getElementById('searchInput').addEventListener('input',e=>{search=e.target.value.toLowerCase().trim();renderStations();});
+
+// ── QUEUE ──
+function renderQueue(){const list=document.getElementById('queueList');const c=document.getElementById('queueCount');c.textContent=songQueue.length?`(${songQueue.length})`:'';if(!songQueue.length){list.innerHTML='<div class="qemp">No requests yet — use the AI DJ to queue a song!</div>';return;}list.innerHTML='';songQueue.forEach((item,i)=>{const el=document.createElement('div');el.className='qi'+(item.status==='playing'?' pi':'');el.innerHTML=`<div class="qn">${item.status==='playing'?'▶':String(i+1).padStart(2,'0')}</div><div class="qif"><div class="qs">${item.song}</div><div class="qm">by ${item.artist} · from ${item.requestedBy}</div></div><span class="qst ${item.status}">${item.status==='playing'?'On Air':'Queued'}</span>`;list.appendChild(el);});}
+function addToQueue(song,artist,requestedBy,djMsg){const e={id:Date.now()+'',song,artist:artist||'Unknown',requestedBy:requestedBy||'Anonymous',status:'queued',djMessage:djMsg,ts:new Date().toISOString()};songQueue.push(e);renderQueue();return e;}
+async function clearQueue(){try{await fetch('/api/queue/clear',{method:'POST'});}catch{songQueue=[];renderQueue();}}
+
+// ── MP3 LIBRARY ──
+let trackLibrary=[];
+async function loadTracks(){
+  try{
+    const r=await fetch('/api/tracks');
+    const d=await r.json();
+    if(d.success){trackLibrary=d.tracks;renderTracks(d.tracks);}
+  }catch{renderTracks([]);}
+}
+function renderTracks(tracks){
+  const grid=document.getElementById('trackGrid');
+  const c=document.getElementById('trackCount');
+  c.textContent=tracks.length?`(${tracks.length})`:'';
+  if(!tracks.length){grid.innerHTML='<div class="lib-empty"><div style="font-size:2rem">🎵</div><p>No tracks uploaded yet.<br>Add your MP3s above to get started.</p></div>';return;}
+  grid.innerHTML='';
+  tracks.forEach(t=>{
+    const card=document.createElement('div'); card.className='tcard';
+    const sizeMB=t.size?(t.size/1024/1024).toFixed(1)+'MB':'—';
+    card.innerHTML=`<div class="tcard-top"><div class="tcard-icon">🎵</div><div><div class="tcard-title">${t.title}</div><div class="tcard-artist">${t.artist}</div></div></div><div class="tcard-meta"><span class="tcard-genre">${t.genre||'Various'}</span><span class="tcard-size">${sizeMB}</span></div><div class="tcard-actions"><button class="btn-tplay">▶ Play</button><button class="btn-tq">+ Queue</button><button class="btn-tdel" title="Delete">🗑</button></div>`;
+    card.querySelector('.btn-tplay').addEventListener('click',()=>playTrack(t.url,t.title,t.artist));
+    card.querySelector('.btn-tq').addEventListener('click',async()=>{
+      try{
+        const r=await fetch(`/api/tracks/${t.id}/request`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestedBy:'Library'})});
+        const d=await r.json();
+        if(d.success){songQueue=d.entry?[...songQueue,d.entry]:songQueue;renderQueue();addMsg('a',d.djMessage||`✅ "${t.title}" queued!`);speak(d.djMessage||`"${t.title}" is queued!`,'dj');}
+      }catch{const e=addToQueue(t.title,t.artist,'Library',`"${t.title}" queued!`);addMsg('a',`✅ "${t.title}" added to queue!`);}
+    });
+    card.querySelector('.btn-tdel').addEventListener('click',async()=>{
+      if(!confirm(`Delete "${t.title}"?`)) return;
+      try{await fetch(`/api/tracks/${t.id}`,{method:'DELETE'});trackLibrary=trackLibrary.filter(x=>x.id!==t.id);renderTracks(trackLibrary);}catch{alert('Delete failed');}
+    });
+    grid.appendChild(card);
+  });
+}
+
+// Upload flow
+const uploadZone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('fileInput');
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag');});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+fileInput.addEventListener('change',()=>handleFiles(fileInput.files));
+
+function handleFiles(files){
+  pendingFiles=[...files].slice(0,20);
+  if(!pendingFiles.length) return;
+  const form=document.getElementById('uploadForm'); form.classList.add('show');
+  const list=document.getElementById('uFilesList'); list.innerHTML='';
+  document.getElementById('fileCountLabel').textContent=`— ${pendingFiles.length} file${pendingFiles.length>1?'s':''}`;
+  pendingFiles.forEach((f,i)=>{const el=document.createElement('div');el.className='ufile-item';el.innerHTML=`<span class="ufile-name">${f.name}</span><span class="ufile-size">${(f.size/1024/1024).toFixed(1)}MB</span><button class="ufile-rm" data-i="${i}">×</button>`;el.querySelector('.ufile-rm').addEventListener('click',()=>{pendingFiles.splice(i,1);handleFiles(pendingFiles);});list.appendChild(el);});
+}
+
+function cancelUpload(){pendingFiles=[];fileInput.value='';document.getElementById('uploadForm').classList.remove('show');}
+
+document.getElementById('btnUpload').addEventListener('click',async()=>{
+  if(!pendingFiles.length) return;
+  const btn=document.getElementById('btnUpload');
+  const prog=document.getElementById('uprog'); const progBar=document.getElementById('uprogBar');
+  const status=document.getElementById('uploadStatus');
+  btn.disabled=true; prog.classList.add('show'); status.textContent='Uploading...';
+  const fd=new FormData();
+  pendingFiles.forEach(f=>fd.append('files',f));
+  const title=document.getElementById('uTitle').value.trim();
+  const artist=document.getElementById('uArtist').value.trim();
+  const genre=document.getElementById('uGenre').value;
+  if(title) fd.append('title',title);
+  if(artist) fd.append('artist',artist);
+  fd.append('genre',genre);
+  // Fake progress
+  let prog_val=0;
+  const interval=setInterval(()=>{prog_val=Math.min(prog_val+5,90);progBar.style.width=prog_val+'%';},200);
+  try{
+    const r=await fetch('/api/tracks/upload',{method:'POST',body:fd});
+    const d=await r.json();
+    clearInterval(interval); progBar.style.width='100%';
+    if(d.success){
+      status.textContent=`✅ ${d.uploaded.filter(x=>!x.error).length} track(s) uploaded!`;
+      trackLibrary=[...trackLibrary,...d.uploaded.filter(x=>!x.error)];
+      renderTracks(trackLibrary);
+      setTimeout(cancelUpload,1500);
+    } else { status.textContent='⚠️ '+d.error; }
+  }catch(e){
+    clearInterval(interval);
+    status.textContent='⚠️ Upload failed — is the backend running with R2 configured?';
+  }
+  btn.disabled=false;
+});
+
+// ── VOICE ──
+function speak(text,style='dj'){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const utt=new SpeechSynthesisUtterance(text);const vv=window.speechSynthesis.getVoices();if(style==='dj'){utt.rate=1.08;utt.pitch=1.1;const v=vv.find(v=>v.name.includes('Daniel')||v.name.includes('Alex')||v.name.includes('David'));if(v)utt.voice=v;}else{utt.rate=0.93;utt.pitch=0.95;const v=vv.find(v=>v.name.includes('Samantha')||v.name.includes('Karen'));if(v)utt.voice=v;}utt.onend=()=>document.getElementById('btnStop').classList.remove('active');window.speechSynthesis.speak(utt);document.getElementById('btnStop').classList.add('active');}
+document.getElementById('btnDJ').addEventListener('click',()=>{const l=[...document.querySelectorAll('.msg.a .bbl')].pop();if(l)speak(l.textContent,'dj');});
+document.getElementById('btnAnc').addEventListener('click',()=>{const l=[...document.querySelectorAll('.msg.a .bbl')].pop();if(l)speak(l.textContent,'anchor');});
+document.getElementById('btnStop').addEventListener('click',()=>{window.speechSynthesis.cancel();document.getElementById('btnStop').classList.remove('active');});
+
+// ── AGENT ──
+function addMsg(role,html,card=null){const box=document.getElementById('agentMsgs');const m=document.createElement('div');m.className='msg '+role;const now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});m.innerHTML=`<div class="bbl">${html}</div><div class="mt">${now}</div>`;if(card){const w=document.createElement('div');w.style.marginTop='5px';w.appendChild(card);m.appendChild(w);}box.appendChild(m);box.scrollTop=box.scrollHeight;return m;}
+function showTyping(){const box=document.getElementById('agentMsgs');const el=document.createElement('div');el.className='msg a';el.id='typingMsg';el.innerHTML=`<div class="typi"><div class="tyd"></div><div class="tyd"></div><div class="tyd"></div></div>`;box.appendChild(el);box.scrollTop=box.scrollHeight;}
+function hideTyping(){const el=document.getElementById('typingMsg');if(el)el.remove();}
+
+function buildPlaylistCard(tracks,title){const card=document.createElement('div');card.className='plcard';card.innerHTML=`<div class="plct">🎵 ${title}</div>`;tracks.forEach((t,i)=>{const row=document.createElement('div');row.className='plt';row.innerHTML=`<div class="ptn">${i+1}</div><div class="pti"><div class="pts">${t.song||t.title}</div><div class="pta">${t.artist}</div></div><div class="ptd">${t.duration||'—'}</div><button class="bqt">+ Queue</button>`;row.querySelector('.bqt').addEventListener('click',()=>handleRequest(t.song||t.title,t.artist,'Playlist'));card.appendChild(row);});return card;}
+function buildNewsCard(item){const card=document.createElement('div');card.className='ncard';const txt=`${item.headline}. ${item.summary||''}`;card.innerHTML=`<div class="nlbl">${item.source||'VV News'}</div><div class="nhl">${item.headline}</div><div class="nsm">${item.summary||''}</div><div class="nft"><span class="nmt">${item.time||'just now'}</span><button class="brd">🔊 Read aloud</button></div>`;card.querySelector('.brd').addEventListener('click',function(){this.classList.add('spk');speak(txt,'anchor');setTimeout(()=>this.classList.remove('spk'),6000);});return card;}
+function buildReqForm(){const form=document.createElement('div');form.className='rfc';form.innerHTML=`<div class="rfct">🎵 Song Request</div><input class="ri" id="rSong" placeholder="Song title *"><input class="ri" id="rArtist" placeholder="Artist (optional)"><input class="ri" id="rName" placeholder="Your name"><button class="bsr" id="rSub">Request this song →</button>`;form.querySelector('#rSub').addEventListener('click',async()=>{const song=form.querySelector('#rSong').value.trim();const artist=form.querySelector('#rArtist').value.trim();const name=form.querySelector('#rName').value.trim()||'Anonymous';if(!song){form.querySelector('#rSong').focus();return;}form.querySelector('#rSub').disabled=true;await handleRequest(song,artist,name);form.querySelector('#rSong').value='';form.querySelector('#rArtist').value='';form.querySelector('#rSub').disabled=false;});return form;}
+
+async function handleRequest(song,artist,requestedBy){
+  showTyping();
+  try{
+    const r=await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({song,artist,requestedBy})});
+    const d=await r.json(); hideTyping();
+    const msg=d.djMessage||`🎙️ "${song}" is queued!`;
+    if(!d.entry) addToQueue(song,artist,requestedBy,msg);
+    addMsg('a',msg); speak(msg,'dj');
+  }catch{hideTyping();const msg=`🎙️ "${song}" is queued — coming your way!`;addToQueue(song,artist,requestedBy,msg);addMsg('a',msg);speak(msg,'dj');}
+}
+
+document.querySelectorAll('.mb').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');agentMode=btn.dataset.mode;
+  const ph={chat:'Chat with VV Agent...',request:'Type a song to request...',playlist:'Describe your vibe...',news:'Ask for news...'};
+  document.getElementById('agentInput').placeholder=ph[agentMode]||ph.chat;
+  if(agentMode==='request'){addMsg('a','🎵 What song would you like to request?');const msgs=document.getElementById('agentMsgs');msgs.appendChild(buildReqForm());msgs.scrollTop=9999;}
+  if(agentMode==='news')autoNews();
+  if(agentMode==='playlist')addMsg('a','📋 Describe the vibe and I\'ll build your playlist!');
+}));
+
+async function autoNews(){if(agentBusy)return;agentBusy=true;addMsg('u','Get the latest music news');showTyping();try{const r=await fetch('/api/news');const d=await r.json();hideTyping();if(d.news?.length){const el=addMsg('a','📰 Latest headlines — tap 🔊 to hear any read aloud:');d.news.forEach(item=>el.appendChild(buildNewsCard(item)));speak('Here are the latest music and entertainment headlines from Variety Vibes Radio.','anchor');}else addMsg('a','📰 Couldn\'t load news right now.');}catch{hideTyping();addMsg('a','📰 News unavailable — is the backend running?');}agentBusy=false;}
+
+async function sendMessage(){
+  const input=document.getElementById('agentInput');const msg=input.value.trim();
+  if(!msg||agentBusy)return; input.value=''; agentBusy=true; document.getElementById('sendBtn').disabled=true;
+  if(agentMode==='request'){addMsg('u',msg);await handleRequest(msg,'','Listener');agentBusy=false;document.getElementById('sendBtn').disabled=false;return;}
+  if(agentMode==='playlist'){addMsg('u',msg);showTyping();try{const r=await fetch('/api/playlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vibe:msg,count:6})});const d=await r.json();hideTyping();if(d.playlist){const card=buildPlaylistCard(d.playlist.tracks,d.playlist.title);addMsg('a',d.intro||`🎵 Here's your playlist: <strong>${d.playlist.title}</strong>`,card);if(d.playlist.djIntro)speak(d.playlist.djIntro,'dj');}else addMsg('a',d.intro||'Here\'s a playlist for you!');}catch{hideTyping();addMsg('a','Couldn\'t build playlist right now!');}agentBusy=false;document.getElementById('sendBtn').disabled=false;return;}
+  addMsg('u',msg);showTyping();try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});const d=await r.json();hideTyping();addMsg('a',d.reply||'...');}catch{hideTyping();addMsg('a','Connection issue — is the backend running?');}
+  agentBusy=false;document.getElementById('sendBtn').disabled=false;
+}
+document.getElementById('sendBtn').addEventListener('click',sendMessage);
+document.getElementById('agentInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
+// ── SUBMIT STATION ──
+function selPlan(el,name,price){document.querySelectorAll('.popt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');selectedPlan=name+' '+price;}
+async function submitStation(){
+  const name=document.getElementById('sName').value.trim();
+  const genre=document.getElementById('sGenre').value;
+  const contact=document.getElementById('sContact').value.trim();
+  const email=document.getElementById('sEmail').value.trim();
+  if(!name||!genre||!contact||!email||!selectedPlan){alert('Please fill in all required fields and select a plan.');return;}
+  try{
+    const r=await fetch('/api/submit-station',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stationName:name,genre,contact,email,phone:document.getElementById('sPhone').value,website:document.getElementById('sWebsite').value,streamUrl:document.getElementById('sStream').value,description:document.getElementById('sDesc').value,plan:selectedPlan,notes:document.getElementById('sNotes').value})});
+    const d=await r.json();
+    if(d.success){document.getElementById('submitForm').style.display='none';document.getElementById('successMsg').classList.add('show');document.getElementById('successName').textContent=name;setTimeout(()=>window.open(`https://varietyvibesradio.com/contact/?subject=Station+Submission:+${encodeURIComponent(name)}&plan=${encodeURIComponent(selectedPlan)}`,'_blank'),1200);}
+  }catch{document.getElementById('submitForm').style.display='none';document.getElementById('successMsg').classList.add('show');document.getElementById('successName').textContent=name;}
+}
+
+// ── INIT ──
+renderStations(); updBarSt(activeSt); updBarUI(); renderQueue();
+connectWS();
+setTimeout(()=>{addMsg('a',"🎙️ Welcome to Variety Vibes Radio Hub! I'm your VV AI Agent.<br><br>🎵 <strong>Request</strong> a song for the queue<br>📋 <strong>Playlist</strong> — tell me your vibe<br>📰 <strong>News</strong> — headlines read aloud<br>🎵 <strong>MP3 Library</strong> — upload and manage tracks<br><br>Hit <strong>▶ Listen</strong> on Variety Vibes Radio to tune in live!");},400);
+</script>
+</body>
+</html>
