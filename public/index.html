@@ -607,7 +607,7 @@ function renderStations(){
   spots.forEach(sp=>{
     const el=document.createElement('div'); el.className='sc av';
     el.innerHTML=`<div class="avbdg">Available Spot</div><div class="avtl">Your station here</div><div class="avpr">Starting at ${sp.p}</div><div class="avds">Reach thousands of listeners on Variety Vibes Radio Hub.</div><button class="btnpkg">View Packages</button>`;
-    el.querySelector('.btnpkg').addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab')[3].classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-sponsor').classList.add('active');});
+    el.querySelector('.btnpkg').addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab')[3].classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-submit').classList.add('active');});
     grid.appendChild(el);
   });
   grid.querySelectorAll('.bfv').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=+b.dataset.id;favs.has(id)?favs.delete(id):favs.add(id);renderStations();}));
@@ -784,3 +784,4 @@ setTimeout(()=>{addMsg('a',"🎙️ Welcome to Variety Vibes Radio Hub! I'm your
 </script>
 </body>
 </html>
+
