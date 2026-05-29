@@ -276,11 +276,13 @@
   </div>
 </div>
 
-<script>`nconst API = window.location.origin;
+<script>
 let token = localStorage.getItem('vv_admin_token') || '';
 let userRole = '', userStationId = '', pendingFiles = [], selectedUploadStation = '', selectedLibStation = '';
 
-const STATIONS = [];`n
+const STATIONS = [];
+const API = window.location.origin;
+
 // ── AUTH ──
 function setLoginMode(mode, btn) {
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
@@ -464,7 +466,7 @@ document.getElementById('btnUpload')?.addEventListener('click', async ()=>{
   const tick=setInterval(()=>{ pval=Math.min(pval+4,88); bar.style.width=pval+'%'; },300);
 
   try {
-    const r=await fetch(`/api/stations/${selectedUploadStation}/tracks`,{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
+    const r=await fetch(`${API}/api/stations/${selectedUploadStation}/tracks`,{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
     const d=await r.json();
     clearInterval(tick); bar.style.width='100%';
     if(d.success){
@@ -488,7 +490,7 @@ async function loadLibrary() {
   if(!selectedLibStation){ document.getElementById('libraryContent').innerHTML='<div class="empty">Select a station above.</div>'; return; }
   document.getElementById('libraryContent').innerHTML='<div class="empty">Loading...</div>';
   try {
-    const r=await fetch(`/api/stations/${selectedLibStation}/tracks`,{headers:{'Authorization':'Bearer '+token}});
+    const r=await fetch(`${API}/api/stations/${selectedLibStation}/tracks`,{headers:{'Authorization':'Bearer '+token}});
     const d=await r.json();
     document.getElementById('libTrackCount').textContent=d.tracks.length?`(${d.tracks.length})`:'';
     renderTrackTable(d.tracks, selectedLibStation);
@@ -518,7 +520,7 @@ function playPreview(url) {
 async function deleteTrack(stationId, trackId, title) {
   if(!confirm(`Delete "${title}"? This cannot be undone.`)) return;
   try {
-    const r=await fetch(`/api/stations/${stationId}/tracks/${trackId}`,{method:'DELETE',headers:authHeaders()});
+    const r=await fetch(`${API}/api/stations/${stationId}/tracks/${trackId}`,{method:'DELETE',headers:authHeaders()});
     const d=await r.json();
     if(d.success) loadLibrary();
     else alert('Delete failed: '+d.error);
@@ -556,7 +558,7 @@ async function createOwner() {
 async function deleteOwner(email, name) {
   if(!confirm(`Remove account for ${name} (${email})?`)) return;
   try {
-    await fetch(`/api/admin/owners/${encodeURIComponent(email)}`,{method:'DELETE',headers:authHeaders()});
+    await fetch(`${API}/api/admin/owners/${encodeURIComponent(email)}`,{method:'DELETE',headers:authHeaders()});
     loadOwners();
   } catch { alert('Failed to remove owner'); }
 }
@@ -568,7 +570,7 @@ async function loadQueues() {
   el.innerHTML='';
   for(const s of stations){
     try{
-      const r=await fetch(`/api/stations/${s.id}/queue`);
+      const r=await fetch(`${API}/api/stations/${s.id}/queue`);
       const d=await r.json();
       const div=document.createElement('div'); div.className='card';
       div.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="card-title" style="margin-bottom:0">${s.abbr} — ${s.name}</div><span style="font-size:.72rem;color:var(--mu)">${d.queue.length} request${d.queue.length!==1?'s':''}</span></div>`;
@@ -587,5 +589,3 @@ async function loadQueues() {
 </script>
 </body>
 </html>
-
-
