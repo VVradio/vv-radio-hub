@@ -276,12 +276,11 @@
   </div>
 </div>
 
-<script>
+<script>`nconst API = window.location.origin;
 let token = localStorage.getItem('vv_admin_token') || '';
 let userRole = '', userStationId = '', pendingFiles = [], selectedUploadStation = '', selectedLibStation = '';
 
-const STATIONS = [];`nconst API = window.location.origin;
-
+const STATIONS = [];`n
 // ── AUTH ──
 function setLoginMode(mode, btn) {
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
@@ -588,3 +587,5 @@ async function loadQueues() {
 </script>
 </body>
 </html>
+
+
