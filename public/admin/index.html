@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VV Radio — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a1020;--sur:#131d30;--sur2:#1a2740;--bor:rgba(255,255,255,.08);--or:#e8621a;--ord:rgba(232,98,26,.15);--tx:#fff;--mu:#8a9bbf;--red:#e84040;--gr:#4caf50;--sbg:#1a2535;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-height:100vh;font-size:14px;}
+
+  /* LOGIN */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .login-card{background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:36px;width:100%;max-width:380px;text-align:center;}
+  .login-logo{font-size:1.5rem;font-weight:800;margin-bottom:4px;}
+  .login-logo span{color:var(--or);}
+  .login-sub{font-size:.78rem;color:var(--mu);margin-bottom:28px;}
+  .login-tabs{display:flex;gap:8px;margin-bottom:22px;}
+  .ltab{flex:1;padding:9px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;transition:all .15s;}
+  .ltab.active{background:var(--or);border-color:var(--or);color:#fff;}
+  .linp{width:100%;background:var(--sbg);border:1px solid var(--bor);border-radius:9px;padding:11px 14px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;}
+  .linp::placeholder{color:var(--mu);}
+  .linp:focus{border-color:rgba(232,98,26,.5);}
+  .lsel{width:100%;background:var(--sbg);border:1px solid var(--bor);border-radius:9px;padding:11px 14px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;margin-bottom:10px;cursor:pointer;}
+  .lsel option{background:var(--sur2);}
+  .lbtn{width:100%;padding:12px;background:var(--or);border:none;color:#fff;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;transition:opacity .15s;}
+  .lbtn:hover{opacity:.85;}
+  .lerr{color:var(--red);font-size:.78rem;margin-top:8px;}
+
+  /* ADMIN LAYOUT */
+  .admin-wrap{display:none;min-height:100vh;}
+  .sidebar{width:220px;background:var(--sur);border-right:1px solid var(--bor);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;padding:20px 0;}
+  .sb-logo{padding:0 20px 20px;border-bottom:1px solid var(--bor);margin-bottom:16px;}
+  .sb-logo-t{font-size:1rem;font-weight:800;}
+  .sb-logo-t span{color:var(--or);}
+  .sb-logo-s{font-size:.65rem;color:var(--mu);letter-spacing:2px;text-transform:uppercase;}
+  .sb-user{padding:10px 20px 16px;border-bottom:1px solid var(--bor);margin-bottom:12px;}
+  .sb-user-name{font-weight:700;font-size:.85rem;}
+  .sb-user-role{font-size:.7rem;color:var(--or);}
+  .sb-nav{flex:1;}
+  .sbn{display:block;padding:10px 20px;color:var(--mu);text-decoration:none;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+  .sbn:hover{color:var(--tx);background:rgba(255,255,255,.04);}
+  .sbn.active{color:var(--or);background:var(--ord);font-weight:700;}
+  .sb-logout{padding:16px 20px 0;border-top:1px solid var(--bor);margin-top:auto;}
+  .btn-logout{width:100%;padding:8px;border:1px solid var(--bor);background:transparent;color:var(--mu);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;transition:all .15s;}
+  .btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+  .admin-main{margin-left:220px;padding:28px;min-height:100vh;}
+  .ap{display:none;} .ap.active{display:block;}
+  .ph{margin-bottom:24px;}
+  .ph h1{font-size:1.4rem;font-weight:800;margin-bottom:4px;}
+  .ph h1 span{color:var(--or);}
+  .ph p{color:var(--mu);font-size:.85rem;}
+
+  /* CARDS */
+  .card{background:var(--sur);border:1px solid var(--bor);border-radius:13px;padding:22px;margin-bottom:18px;}
+  .card-title{font-size:.82rem;font-weight:700;color:var(--or);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
+
+  /* STATION SELECTOR */
+  .st-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:22px;}
+  .st-btn{padding:12px;border:1px solid var(--bor);background:var(--sur2);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;}
+  .st-btn:hover{border-color:rgba(232,98,26,.4);}
+  .st-btn.sel{border-color:var(--or);background:var(--ord);}
+  .st-btn-abbr{font-weight:800;font-size:1rem;color:var(--or);display:block;margin-bottom:2px;}
+  .st-btn-name{font-size:.72rem;color:var(--mu);}
+  .st-btn-count{font-size:.65rem;color:var(--or);margin-top:3px;}
+
+  /* UPLOAD ZONE */
+  .uzone{border:2px dashed rgba(232,98,26,.35);border-radius:12px;padding:32px 22px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(232,98,26,.02);position:relative;margin-bottom:18px;}
+  .uzone:hover,.uzone.drag{border-color:var(--or);background:rgba(232,98,26,.06);}
+  .uzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .uz-icon{font-size:2rem;margin-bottom:8px;}
+  .uz-t{font-size:.95rem;font-weight:700;margin-bottom:3px;}
+  .uz-s{font-size:.75rem;color:var(--mu);}
+
+  /* FORM INPUTS */
+  .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+  .fl{font-size:.72rem;font-weight:700;color:var(--mu);}
+  .fi{background:var(--sbg);border:1px solid var(--bor);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.85rem;outline:none;}
+  .fi::placeholder{color:var(--mu);} .fi:focus{border-color:rgba(232,98,26,.4);}
+  .fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:700px){.fgrid3{grid-template-columns:1fr;}}
+
+  /* FILES LIST */
+  .flist{display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;margin-bottom:12px;}
+  .fitem{display:flex;align-items:center;gap:9px;background:var(--sbg);border-radius:7px;padding:7px 11px;}
+  .fitem-name{flex:1;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fitem-size{font-size:.65rem;color:var(--mu);white-space:nowrap;}
+  .fitem-rm{background:none;border:none;color:var(--mu);cursor:pointer;font-size:.95rem;padding:0 2px;transition:color .15s;}
+  .fitem-rm:hover{color:var(--red);}
+
+  /* PROGRESS */
+  .prog{background:var(--sur2);border-radius:5px;height:5px;overflow:hidden;margin-bottom:10px;display:none;}
+  .prog.show{display:block;}
+  .prog-bar{height:100%;background:var(--or);border-radius:5px;transition:width .3s;}
+
+  /* BUTTONS */
+  .btn{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;transition:opacity .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{opacity:.85;} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-or{background:var(--or);color:#fff;}
+  .btn-gh{background:transparent;border:1px solid var(--bor);color:var(--mu);}
+  .btn-gh:hover{border-color:var(--tx);color:var(--tx);opacity:1;}
+  .btn-rd{background:transparent;border:1px solid var(--red);color:var(--red);}
+  .btn-rd:hover{background:var(--red);color:#fff;opacity:1;}
+  .btn-sm{padding:5px 12px;font-size:.72rem;}
+
+  /* TRACK TABLE */
+  .ttable{width:100%;border-collapse:collapse;}
+  .ttable th{font-size:.68rem;color:var(--mu);font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--bor);}
+  .ttable td{padding:10px 12px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+  .ttable tr:last-child td{border-bottom:none;}
+  .ttable tr:hover td{background:rgba(255,255,255,.02);}
+  .tsize{color:var(--mu);font-size:.72rem;}
+  .tdate{color:var(--mu);font-size:.7rem;}
+  .tactions{display:flex;gap:6px;align-items:center;}
+  .tag{font-size:.62rem;padding:2px 7px;border-radius:100px;font-weight:600;}
+  .tag-or{background:var(--ord);color:var(--or);}
+
+  /* OWNERS TABLE */
+  .otable{width:100%;border-collapse:collapse;}
+  .otable th{font-size:.68rem;color:var(--mu);font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--bor);}
+  .otable td{padding:10px 12px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);}
+  .otable tr:last-child td{border-bottom:none;}
+
+  /* STATUS */
+  .status-bar{padding:10px 16px;border-radius:8px;font-size:.8rem;margin-bottom:12px;display:none;}
+  .status-bar.show{display:block;}
+  .status-bar.ok{background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3);color:var(--gr);}
+  .status-bar.err{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red);}
+
+  .empty{color:var(--mu);font-size:.82rem;text-align:center;padding:28px;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .ftable{animation:fadeUp .25s ease both;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">VV <span>Admin</span></div>
+    <div class="login-sub">Variety Vibes Radio Hub — Backend</div>
+    <div class="login-tabs">
+      <button class="ltab active" onclick="setLoginMode('admin',this)">Admin Login</button>
+      <button class="ltab" onclick="setLoginMode('owner',this)">Station Owner</button>
+    </div>
+    <div id="adminLoginForm">
+      <input class="linp" id="adminPass" type="password" placeholder="Admin password">
+      <button class="lbtn" onclick="adminLogin()">Sign In as Admin</button>
+    </div>
+    <div id="ownerLoginForm" style="display:none">
+      <input class="linp" id="ownerEmail" type="email" placeholder="Email address">
+      <input class="linp" id="ownerPass" type="password" placeholder="Password">
+      <button class="lbtn" onclick="ownerLogin()">Sign In as Station Owner</button>
+    </div>
+    <div class="lerr" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-wrap" id="adminWrap">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-t">VV <span>Admin</span></div>
+      <div class="sb-logo-s">Radio Hub Backend</div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-user-name" id="sbUserName">Admin</div>
+      <div class="sb-user-role" id="sbUserRole">Administrator</div>
+    </div>
+    <nav class="sb-nav">
+      <button class="sbn active" onclick="showPage('upload',this)">⬆️ Upload MP3s</button>
+      <button class="sbn" onclick="showPage('library',this)">🎵 Track Library</button>
+      <button class="sbn admin-only" onclick="showPage('owners',this)">👥 Station Owners</button>
+      <button class="sbn admin-only" onclick="showPage('queue',this)">📋 Request Queue</button>
+    </nav>
+    <div class="sb-logout">
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="admin-main">
+
+    <!-- UPLOAD PAGE -->
+    <div class="ap active" id="page-upload">
+      <div class="ph"><h1>Upload <span>MP3s</span></h1><p>Select a station, then drag and drop your audio files.</p></div>
+
+      <div class="card">
+        <div class="card-title">Select Station</div>
+        <div class="st-selector" id="uploadStSelector"></div>
+      </div>
+
+      <div class="card" id="uploadCard" style="display:none">
+        <div class="card-title">Upload Files</div>
+        <div class="uzone" id="uzone">
+          <input type="file" id="fileInp" multiple accept="audio/*,.mp3,.wav,.flac,.aac,.m4a">
+          <div class="uz-icon">🎵</div>
+          <div class="uz-t">Drop audio files here or click to browse</div>
+          <div class="uz-s">MP3, WAV, FLAC, AAC, M4A · Max 100MB per file · Up to 30 files</div>
+        </div>
+
+        <div id="uploadFormInner" style="display:none">
+          <div class="fgrid3">
+            <div class="fg"><label class="fl">Default Title</label><input class="fi" id="uTitle" placeholder="Leave blank = use filename"></div>
+            <div class="fg"><label class="fl">Artist</label><input class="fi" id="uArtist" placeholder="Artist name"></div>
+            <div class="fg"><label class="fl">Genre</label>
+              <select class="fi" id="uGenre">
+                <option>Various</option><option>Hip Hop / Rap</option><option>R&B / Soul</option>
+                <option>Pop / Top 40</option><option>Electronic / Dance</option><option>Gospel / Christian</option>
+                <option>Country</option><option>Rock</option><option>Jazz / Blues</option><option>Latin</option>
+              </select>
+            </div>
+          </div>
+          <div class="flist" id="uFileList"></div>
+          <div class="prog" id="uprog"><div class="prog-bar" id="uprogBar" style="width:0%"></div></div>
+          <div class="status-bar" id="uploadStatus"></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-or" id="btnUpload">⬆️ Upload to R2</button>
+            <button class="btn btn-gh" onclick="cancelUpload()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIBRARY PAGE -->
+    <div class="ap" id="page-library">
+      <div class="ph"><h1>Track <span>Library</span></h1><p>All uploaded tracks organised by station. Admins can delete or reassign tracks.</p></div>
+
+      <div class="card">
+        <div class="card-title">Filter by Station</div>
+        <div class="st-selector" id="libStSelector"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:0">Tracks <span id="libTrackCount" style="font-weight:400;opacity:.6;font-size:.75rem;"></span></div>
+          <button class="btn btn-gh btn-sm" onclick="loadLibrary()">↻ Refresh</button>
+        </div>
+        <div id="libraryContent"><div class="empty">Select a station above to view tracks.</div></div>
+      </div>
+    </div>
+
+    <!-- OWNERS PAGE (admin only) -->
+    <div class="ap" id="page-owners">
+      <div class="ph"><h1>Station <span>Owners</span></h1><p>Create and manage login accounts for station owners.</p></div>
+
+      <div class="card">
+        <div class="card-title">Create Owner Account</div>
+        <div class="status-bar" id="ownerStatus"></div>
+        <div class="fgrid3">
+          <div class="fg"><label class="fl">Full Name</label><input class="fi" id="oName" placeholder="Owner name"></div>
+          <div class="fg"><label class="fl">Email</label><input class="fi" id="oEmail" type="email" placeholder="owner@example.com"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi" id="oPass" type="password" placeholder="Strong password"></div>
+        </div>
+        <div class="fg" style="margin-bottom:14px;">
+          <label class="fl">Assign to Station</label>
+          <select class="fi" id="oStation"></select>
+        </div>
+        <button class="btn btn-or" onclick="createOwner()">Create Owner Account</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Current Owners</div>
+        <div id="ownersContent"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- QUEUE PAGE -->
+    <div class="ap" id="page-queue">
+      <div class="ph"><h1>Request <span>Queue</span></h1><p>Live song request queues across all stations.</p></div>
+      <div id="queueContent"><div class="empty">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let token = localStorage.getItem('vv_admin_token') || '';
+let userRole = '', userStationId = '', pendingFiles = [], selectedUploadStation = '', selectedLibStation = '';
+
+const STATIONS = [];
+
+// ── AUTH ──
+function setLoginMode(mode, btn) {
+  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('adminLoginForm').style.display = mode==='admin'?'block':'none';
+  document.getElementById('ownerLoginForm').style.display = mode==='owner'?'block':'none';
+  document.getElementById('loginErr').textContent = '';
+}
+
+async function adminLogin() {
+  const pass = document.getElementById('adminPass').value;
+  try {
+    const r = await fetch('/api/auth/admin-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pass }) });
+    const d = await r.json();
+    if (!d.success) { document.getElementById('loginErr').textContent = d.error; return; }
+    token = d.token; userRole = 'admin';
+    localStorage.setItem('vv_admin_token', token);
+    initAdmin();
+  } catch { document.getElementById('loginErr').textContent = 'Connection error'; }
+}
+
+async function ownerLogin() {
+  const email = document.getElementById('ownerEmail').value;
+  const pass  = document.getElementById('ownerPass').value;
+  try {
+    const r = await fetch('/api/auth/owner-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (!d.success) { document.getElementById('loginErr').textContent = d.error; return; }
+    token = d.token; userRole = 'owner'; userStationId = d.stationId;
+    localStorage.setItem('vv_admin_token', token);
+    initAdmin(d);
+  } catch { document.getElementById('loginErr').textContent = 'Connection error'; }
+}
+
+function logout() { token=''; localStorage.removeItem('vv_admin_token'); location.reload(); }
+
+function authHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+// ── INIT ──
+async function initAdmin(ownerData=null) {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('adminWrap').style.display = 'block';
+
+  // Load stations
+  const r = await fetch('/api/stations');
+  const d = await r.json();
+  STATIONS.length = 0;
+  STATIONS.push(...d.stations);
+
+  // Set user info
+  if (userRole === 'admin') {
+    document.getElementById('sbUserName').textContent = 'Admin';
+    document.getElementById('sbUserRole').textContent = 'Super Administrator';
+  } else {
+    const st = STATIONS.find(s=>s.id===userStationId);
+    document.getElementById('sbUserName').textContent = ownerData?.ownerName || 'Station Owner';
+    document.getElementById('sbUserRole').textContent = st?.name || 'Station Owner';
+    // Hide admin-only nav
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+  }
+
+  buildStationSelectors();
+  buildOwnerStationSelect();
+
+  // Auto-select if owner (only one station)
+  if (userRole === 'owner') {
+    selectUploadStation(userStationId);
+    selectLibStation(userStationId);
+  }
+
+  // Try auto-login from saved token
+  if (ownerData) return;
+}
+
+// On load — check saved token
+(async()=>{
+  if (!token) return;
+  try {
+    // Verify by calling a protected endpoint
+    const r = await fetch('/api/stations');
+    const d = await r.json();
+    if (d.stations) {
+      // Decode role from token (basic decode, no verify — server verifies on each call)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userRole = payload.role;
+      userStationId = payload.stationId || '';
+      await initAdmin({ ownerName: payload.name });
+    }
+  } catch { token=''; localStorage.removeItem('vv_admin_token'); }
+})();
+
+// ── PAGES ──
+function showPage(id, btn) {
+  document.querySelectorAll('.ap').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sbn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='library') loadLibrary();
+  if (id==='owners') loadOwners();
+  if (id==='queue') loadQueues();
+}
+
+// ── STATION SELECTORS ──
+function buildStationSelectors() {
+  const stations = userRole==='owner' ? STATIONS.filter(s=>s.id===userStationId) : STATIONS;
+  ['uploadStSelector','libStSelector'].forEach(id=>{
+    const el=document.getElementById(id); el.innerHTML='';
+    stations.forEach(s=>{
+      const btn=document.createElement('div'); btn.className='st-btn'; btn.dataset.id=s.id;
+      btn.innerHTML=`<span class="st-btn-abbr">${s.abbr}</span><span class="st-btn-name">${s.name}</span><span class="st-btn-count" id="${id}-count-${s.id}"></span>`;
+      btn.addEventListener('click',()=>{ if(id==='uploadStSelector') selectUploadStation(s.id); else selectLibStation(s.id); });
+      el.appendChild(btn);
+    });
+  });
+  buildOwnerStationSelect();
+}
+
+function selectUploadStation(id) {
+  selectedUploadStation=id;
+  document.querySelectorAll('#uploadStSelector .st-btn').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));
+  document.getElementById('uploadCard').style.display='block';
+}
+
+function selectLibStation(id) {
+  selectedLibStation=id;
+  document.querySelectorAll('#libStSelector .st-btn').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));
+  loadLibrary();
+}
+
+function buildOwnerStationSelect() {
+  const sel=document.getElementById('oStation'); if(!sel) return;
+  sel.innerHTML=STATIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+// ── UPLOAD ──
+const uzone=document.getElementById('uzone');
+const fileInp=document.getElementById('fileInp');
+if(uzone){
+  uzone.addEventListener('dragover',e=>{e.preventDefault();uzone.classList.add('drag');});
+  uzone.addEventListener('dragleave',()=>uzone.classList.remove('drag'));
+  uzone.addEventListener('drop',e=>{e.preventDefault();uzone.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+  fileInp.addEventListener('change',()=>handleFiles(fileInp.files));
+}
+
+function handleFiles(files) {
+  pendingFiles=[...files].slice(0,30);
+  if(!pendingFiles.length) return;
+  document.getElementById('uploadFormInner').style.display='block';
+  const list=document.getElementById('uFileList'); list.innerHTML='';
+  pendingFiles.forEach((f,i)=>{
+    const el=document.createElement('div'); el.className='fitem';
+    el.innerHTML=`<span class="fitem-name">${f.name}</span><span class="fitem-size">${(f.size/1024/1024).toFixed(1)}MB</span><button class="fitem-rm" onclick="removeFile(${i})">×</button>`;
+    list.appendChild(el);
+  });
+}
+
+function removeFile(i) { pendingFiles.splice(i,1); handleFiles(pendingFiles); }
+function cancelUpload() { pendingFiles=[]; fileInp.value=''; document.getElementById('uploadFormInner').style.display='none'; setStatus('uploadStatus','',''); }
+
+function setStatus(id, type, msg) {
+  const el=document.getElementById(id);
+  el.className='status-bar'+(type?' show '+type:'');
+  el.textContent=msg;
+}
+
+document.getElementById('btnUpload')?.addEventListener('click', async ()=>{
+  if(!pendingFiles.length){ alert('No files selected'); return; }
+  if(!selectedUploadStation){ alert('Please select a station first'); return; }
+  const btn=document.getElementById('btnUpload');
+  const prog=document.getElementById('uprog'); const bar=document.getElementById('uprogBar');
+  btn.disabled=true; prog.classList.add('show'); setStatus('uploadStatus','','');
+  const fd=new FormData();
+  pendingFiles.forEach(f=>fd.append('files',f));
+  const title=document.getElementById('uTitle').value.trim();
+  const artist=document.getElementById('uArtist').value.trim();
+  const genre=document.getElementById('uGenre').value;
+  if(title) fd.append('title',title);
+  if(artist) fd.append('artist',artist);
+  fd.append('genre',genre);
+
+  let pval=0;
+  const tick=setInterval(()=>{ pval=Math.min(pval+4,88); bar.style.width=pval+'%'; },300);
+
+  try {
+    const r=await fetch(`/api/stations/${selectedUploadStation}/tracks`,{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
+    const d=await r.json();
+    clearInterval(tick); bar.style.width='100%';
+    if(d.success){
+      const ok=d.uploaded.filter(x=>x.success).length;
+      const fail=d.uploaded.filter(x=>!x.success).length;
+      setStatus('uploadStatus','ok',`✅ ${ok} track${ok!==1?'s':''} uploaded successfully!${fail?` (${fail} failed)`:''}`)
+      pendingFiles=[]; fileInp.value='';
+      document.getElementById('uploadFormInner').style.display='none';
+      // Update count badge
+      const countEl=document.getElementById(`uploadStSelector-count-${selectedUploadStation}`);
+      if(countEl) countEl.textContent=`${d.total} track${d.total!==1?'s':''}`;
+    } else {
+      setStatus('uploadStatus','err','⚠️ '+d.error);
+    }
+  } catch(e){ clearInterval(tick); setStatus('uploadStatus','err','⚠️ Upload failed: '+e.message); }
+  btn.disabled=false; prog.classList.remove('show'); bar.style.width='0%';
+});
+
+// ── LIBRARY ──
+async function loadLibrary() {
+  if(!selectedLibStation){ document.getElementById('libraryContent').innerHTML='<div class="empty">Select a station above.</div>'; return; }
+  document.getElementById('libraryContent').innerHTML='<div class="empty">Loading...</div>';
+  try {
+    const r=await fetch(`/api/stations/${selectedLibStation}/tracks`,{headers:{'Authorization':'Bearer '+token}});
+    const d=await r.json();
+    document.getElementById('libTrackCount').textContent=d.tracks.length?`(${d.tracks.length})`:'';
+    renderTrackTable(d.tracks, selectedLibStation);
+  } catch { document.getElementById('libraryContent').innerHTML='<div class="empty">Failed to load tracks.</div>'; }
+}
+
+function renderTrackTable(tracks, stationId) {
+  const el=document.getElementById('libraryContent');
+  if(!tracks.length){ el.innerHTML='<div class="empty">No tracks uploaded yet for this station.</div>'; return; }
+  el.innerHTML=`<div class="ftable"><table class="ttable"><thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Genre</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody id="tBody"></tbody></table></div>`;
+  const tbody=document.getElementById('tBody');
+  tracks.forEach((t,i)=>{
+    const tr=document.createElement('tr');
+    const sizeMB=t.size?(t.size/1024/1024).toFixed(1)+'MB':'—';
+    const date=t.uploadedAt?new Date(t.uploadedAt).toLocaleDateString():'—';
+    tr.innerHTML=`<td class="tsize">${i+1}</td><td><strong>${t.title}</strong></td><td>${t.artist}</td><td><span class="tag tag-or">${t.genre||'Various'}</span></td><td class="tsize">${sizeMB}</td><td class="tdate">${date}</td><td><div class="tactions"><button class="btn btn-gh btn-sm" onclick="playPreview('${t.url}')">▶ Preview</button><button class="btn btn-rd btn-sm" onclick="deleteTrack('${stationId}','${t.id}','${t.title.replace(/'/g,"\\'")}')">🗑</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+let previewAudio = null;
+function playPreview(url) {
+  if(previewAudio){ previewAudio.pause(); previewAudio=null; }
+  previewAudio=new Audio(url); previewAudio.volume=0.8; previewAudio.play();
+}
+
+async function deleteTrack(stationId, trackId, title) {
+  if(!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  try {
+    const r=await fetch(`/api/stations/${stationId}/tracks/${trackId}`,{method:'DELETE',headers:authHeaders()});
+    const d=await r.json();
+    if(d.success) loadLibrary();
+    else alert('Delete failed: '+d.error);
+  } catch { alert('Delete failed — network error'); }
+}
+
+// ── OWNERS ──
+async function loadOwners() {
+  if(userRole!=='admin') return;
+  try {
+    const r=await fetch('/api/admin/owners',{headers:authHeaders()});
+    const d=await r.json();
+    const el=document.getElementById('ownersContent');
+    if(!d.owners.length){ el.innerHTML='<div class="empty">No station owner accounts yet.</div>'; return; }
+    el.innerHTML=`<table class="otable"><thead><tr><th>Name</th><th>Email</th><th>Station</th><th>Created</th><th></th></tr></thead><tbody>${
+      d.owners.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.email}</td><td>${o.stationName||o.stationId}</td><td class="tdate">${new Date(o.createdAt).toLocaleDateString()}</td><td><button class="btn btn-rd btn-sm" onclick="deleteOwner('${o.email}','${o.name.replace(/'/g,"\\'")}')">Remove</button></td></tr>`).join('')
+    }</tbody></table>`;
+  } catch { document.getElementById('ownersContent').innerHTML='<div class="empty">Failed to load owners.</div>'; }
+}
+
+async function createOwner() {
+  const name=document.getElementById('oName').value.trim();
+  const email=document.getElementById('oEmail').value.trim();
+  const pass=document.getElementById('oPass').value;
+  const stationId=document.getElementById('oStation').value;
+  if(!name||!email||!pass||!stationId){ setStatus('ownerStatus','err','All fields are required'); return; }
+  try {
+    const r=await fetch('/api/admin/owners',{method:'POST',headers:authHeaders(),body:JSON.stringify({name,email,password:pass,stationId})});
+    const d=await r.json();
+    if(d.success){ setStatus('ownerStatus','ok','✅ '+d.message); document.getElementById('oName').value=''; document.getElementById('oEmail').value=''; document.getElementById('oPass').value=''; loadOwners(); }
+    else setStatus('ownerStatus','err','⚠️ '+d.error);
+  } catch { setStatus('ownerStatus','err','Network error'); }
+}
+
+async function deleteOwner(email, name) {
+  if(!confirm(`Remove account for ${name} (${email})?`)) return;
+  try {
+    await fetch(`/api/admin/owners/${encodeURIComponent(email)}`,{method:'DELETE',headers:authHeaders()});
+    loadOwners();
+  } catch { alert('Failed to remove owner'); }
+}
+
+// ── QUEUES ──
+async function loadQueues() {
+  const el=document.getElementById('queueContent');
+  const stations = userRole==='owner' ? STATIONS.filter(s=>s.id===userStationId) : STATIONS;
+  el.innerHTML='';
+  for(const s of stations){
+    try{
+      const r=await fetch(`/api/stations/${s.id}/queue`);
+      const d=await r.json();
+      const div=document.createElement('div'); div.className='card';
+      div.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div class="card-title" style="margin-bottom:0">${s.abbr} — ${s.name}</div><span style="font-size:.72rem;color:var(--mu)">${d.queue.length} request${d.queue.length!==1?'s':''}</span></div>`;
+      if(!d.queue.length){ div.innerHTML+=`<div class="empty" style="padding:12px">No requests</div>`; }
+      else {
+        const tbl=document.createElement('table'); tbl.className='otable';
+        tbl.innerHTML=`<thead><tr><th>#</th><th>Song</th><th>Artist</th><th>Requested By</th><th>Status</th></tr></thead><tbody>${
+          d.queue.map((q,i)=>`<tr><td class="tsize">${i+1}</td><td><strong>${q.song}</strong></td><td>${q.artist}</td><td>${q.requestedBy}</td><td><span class="tag tag-or">${q.status}</span></td></tr>`).join('')
+        }</tbody>`;
+        div.appendChild(tbl);
+      }
+      el.appendChild(div);
+    }catch{}
+  }
+}
+</script>
+</body>
+</html>
