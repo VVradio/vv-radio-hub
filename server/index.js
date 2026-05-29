@@ -1,95 +1,352 @@
 require('dotenv').config();
-const express      = require('express');
-const cors         = require('cors');
-const http         = require('http');
-const https        = require('https');
-const WebSocket    = require('ws');
-const fetch        = require('node-fetch');
-const multer       = require('multer');
-const path         = require('path');
-const { v4: uuidv4 } = require('uuid');
+const express    = require('express');
+const cors       = require('cors');
+const http       = require('http');
+const https      = require('https');
+const WebSocket  = require('ws');
+const fetch      = require('node-fetch');
+const multer     = require('multer');
+const path       = require('path');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const { v4: uuid } = require('uuid');
 const {
   S3Client, PutObjectCommand, DeleteObjectCommand,
-  ListObjectsV2Command, GetObjectCommand
+  ListObjectsV2Command, GetObjectCommand, HeadObjectCommand
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-// ── ENV ──────────────────────────────────────────────────────────────────────
-const PORT          = process.env.PORT          || 3000;
+// ── ENV ───────────────────────────────────────────────────────────────────────
+const PORT          = process.env.PORT           || 3000;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
-const STREAM_URL    = process.env.STREAM_URL    || 'https://hello.citrus3.com:2020/stream/varietyvibesradio';
+const STREAM_URL    = process.env.STREAM_URL     || 'https://hello.citrus3.com:2020/stream/varietyvibesradio';
+const JWT_SECRET    = process.env.JWT_SECRET     || 'vv-radio-secret-change-me-in-production';
+const ADMIN_PASS    = process.env.ADMIN_PASSWORD || 'varietyvibes2024';
+const R2_ENDPOINT   = process.env.R2_ENDPOINT    || '';
+const R2_KEY_ID     = process.env.R2_ACCESS_KEY_ID || '';
+const R2_SECRET     = process.env.R2_SECRET_KEY  || '';
+const R2_BUCKET     = process.env.R2_BUCKET      || 'vv-radio-mp3s';
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL  || '';
 
-// Cloudflare R2 (S3-compatible)
-const R2_ENDPOINT        = process.env.R2_ENDPOINT        || ''; // https://<account>.r2.cloudflarestorage.com
-const R2_ACCESS_KEY_ID   = process.env.R2_ACCESS_KEY_ID   || '';
-const R2_SECRET_KEY      = process.env.R2_SECRET_KEY      || '';
-const R2_BUCKET          = process.env.R2_BUCKET          || 'vv-radio-mp3s';
-const R2_PUBLIC_URL      = process.env.R2_PUBLIC_URL      || ''; // optional public bucket URL
-
-// ── R2 CLIENT ────────────────────────────────────────────────────────────────
+// ── R2 CLIENT ─────────────────────────────────────────────────────────────────
 const r2 = new S3Client({
-  region: 'auto',
-  endpoint: R2_ENDPOINT,
-  credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_KEY },
+  region: 'auto', endpoint: R2_ENDPOINT,
+  credentials: { accessKeyId: R2_KEY_ID, secretAccessKey: R2_SECRET },
 });
 
-// ── APP SETUP ─────────────────────────────────────────────────────────────────
+// ── STATIONS (source of truth) ────────────────────────────────────────────────
+const STATIONS = [
+  { id: 'vvr',     abbr: 'VV', name: 'Variety Vibes Radio',  genre: 'Indie / Multi-genre',   streamUrl: STREAM_URL },
+  { id: 'hiphop',  abbr: 'HH', name: 'Hip Hop Heat',          genre: 'Hip Hop / Rap',          streamUrl: '' },
+  { id: 'deepho',  abbr: 'DH', name: 'Deep House Nation',     genre: 'Electronic / Dance',     streamUrl: '' },
+  { id: 'gospel',  abbr: 'GG', name: 'Gospel Glory',          genre: 'Gospel / Christian',     streamUrl: '' },
+  { id: 'oldsch',  abbr: 'OS', name: 'Old School Jams',       genre: 'R&B / Soul',             streamUrl: '' },
+  { id: 'soullvb', abbr: 'SV', name: 'Soul Vibes R&B',        genre: 'R&B / Soul',             streamUrl: '' },
+  { id: 'popnat',  abbr: 'PN', name: 'Pop Nation',            genre: 'Pop / Top 40',           streamUrl: '' },
+  { id: 'country', abbr: 'CR', name: 'Country Roads FM',      genre: 'Country',                streamUrl: '' },
+  { id: 'rockfq',  abbr: 'RF', name: 'Rock Frequency',        genre: 'Rock',                   streamUrl: '' },
+];
+
+// ── IN-MEMORY STATE ───────────────────────────────────────────────────────────
+// stationOwners: { email -> { id, email, passwordHash, stationId, name, createdAt } }
+let stationOwners = {};
+// trackLibrary: { stationId -> [{ id, key, title, artist, genre, size, url, uploadedAt }] }
+let trackLibrary  = {};
+// songQueue per station
+let songQueues    = {};
+let allClients    = new Set();
+
+STATIONS.forEach(s => { trackLibrary[s.id] = []; songQueues[s.id] = []; });
+
+// ── EXPRESS + WS ──────────────────────────────────────────────────────────────
 const app    = express();
 const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json());
+
+// Serve admin panel
+app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
+// Serve main frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// multer: hold upload in memory (max 50 MB per file)
+// multer — memory, 100MB max
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = /audio\/(mpeg|mp3|mp4|wav|ogg|flac|aac)|video\/mp4/.test(file.mimetype)
-      || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(file.originalname);
+    const ok = /audio\//i.test(file.mimetype) || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(file.originalname);
     cb(null, ok);
   },
 });
 
-// ── IN-MEMORY STATE ───────────────────────────────────────────────────────────
-let songQueue   = [];   // [{id, song, artist, requestedBy, status, djMessage, ts}]
-let nowPlaying  = null;
-let newsCache   = [];
-let newsCacheAt = 0;
-let trackLib    = [];   // [{id, key, title, artist, genre, size, url, uploadedAt}]
-let allClients  = new Set();
-
 // ── WEBSOCKET ─────────────────────────────────────────────────────────────────
 function broadcast(type, payload) {
   const msg = JSON.stringify({ type, payload, ts: Date.now() });
-  allClients.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); });
+  allClients.forEach(ws => ws.readyState === WebSocket.OPEN && ws.send(msg));
 }
 
 wss.on('connection', ws => {
   allClients.add(ws);
-  ws.send(JSON.stringify({ type: 'init', payload: { queue: songQueue, nowPlaying, trackCount: trackLib.length, streamUrl: STREAM_URL } }));
+  ws.send(JSON.stringify({ type: 'init', payload: { stations: STATIONS, queues: songQueues, streamUrl: STREAM_URL } }));
   ws.on('close',  () => allClients.delete(ws));
   ws.on('error',  () => allClients.delete(ws));
 });
 
-// ── STREAM PROXY ──────────────────────────────────────────────────────────────
-app.get('/api/stream', (req, res) => {
-  const target = req.query.url || STREAM_URL;
-  const parsed = new URL(target);
-  const mod    = parsed.protocol === 'https:' ? https : http;
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  const pr = mod.get(target, { headers: { 'User-Agent': 'Mozilla/5.0', 'Icy-MetaData': '1' } }, upstream => {
-    res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
-    upstream.pipe(res);
-    upstream.on('error', () => res.end());
-  });
-  pr.on('error', err => { if (!res.headersSent) res.status(502).json({ error: err.message }); });
-  req.on('close', () => pr.destroy());
+// ── AUTH MIDDLEWARE ───────────────────────────────────────────────────────────
+function authAdmin(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    req.user = decoded;
+    next();
+  } catch { res.status(401).json({ error: 'Invalid token' }); }
+}
+
+function authOwner(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin' && decoded.role !== 'owner') return res.status(403).json({ error: 'Forbidden' });
+    req.user = decoded;
+    next();
+  } catch { res.status(401).json({ error: 'Invalid token' }); }
+}
+
+// Station access guard — admin sees all, owners see only their station
+function canAccessStation(req, res, next) {
+  const { stationId } = req.params;
+  if (!STATIONS.find(s => s.id === stationId)) return res.status(404).json({ error: 'Station not found' });
+  if (req.user.role === 'admin') return next();
+  if (req.user.stationId !== stationId) return res.status(403).json({ error: 'Access denied — wrong station' });
+  next();
+}
+
+// ── AUTH ROUTES ───────────────────────────────────────────────────────────────
+// Admin login
+app.post('/api/auth/admin-login', async (req, res) => {
+  const { password } = req.body;
+  if (!password || password !== ADMIN_PASS) return res.status(401).json({ error: 'Invalid password' });
+  const token = jwt.sign({ role: 'admin', email: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+  res.json({ success: true, token, role: 'admin' });
 });
 
-// ── AI HELPER ─────────────────────────────────────────────────────────────────
+// Station owner login
+app.post('/api/auth/owner-login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const owner = stationOwners[email.toLowerCase()];
+  if (!owner) return res.status(401).json({ error: 'Invalid email or password' });
+  const ok = await bcrypt.compare(password, owner.passwordHash);
+  if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
+  const station = STATIONS.find(s => s.id === owner.stationId);
+  const token = jwt.sign({ role: 'owner', email: owner.email, stationId: owner.stationId, name: owner.name }, JWT_SECRET, { expiresIn: '24h' });
+  res.json({ success: true, token, role: 'owner', stationId: owner.stationId, stationName: station?.name, ownerName: owner.name });
+});
+
+// Admin: create station owner account
+app.post('/api/admin/owners', authAdmin, async (req, res) => {
+  const { email, password, stationId, name } = req.body;
+  if (!email || !password || !stationId || !name) return res.status(400).json({ error: 'All fields required' });
+  if (!STATIONS.find(s => s.id === stationId)) return res.status(400).json({ error: 'Invalid station ID' });
+  if (stationOwners[email.toLowerCase()]) return res.status(409).json({ error: 'Email already registered' });
+  const passwordHash = await bcrypt.hash(password, 10);
+  stationOwners[email.toLowerCase()] = { id: uuid(), email: email.toLowerCase(), passwordHash, stationId, name, createdAt: new Date().toISOString() };
+  res.json({ success: true, message: `Owner account created for ${name} → ${STATIONS.find(s=>s.id===stationId)?.name}` });
+});
+
+// Admin: list all owners
+app.get('/api/admin/owners', authAdmin, (req, res) => {
+  const list = Object.values(stationOwners).map(o => ({
+    id: o.id, email: o.email, name: o.name, stationId: o.stationId,
+    stationName: STATIONS.find(s=>s.id===o.stationId)?.name, createdAt: o.createdAt
+  }));
+  res.json({ success: true, owners: list });
+});
+
+// Admin: delete owner
+app.delete('/api/admin/owners/:email', authAdmin, (req, res) => {
+  const email = req.params.email.toLowerCase();
+  if (!stationOwners[email]) return res.status(404).json({ error: 'Owner not found' });
+  delete stationOwners[email];
+  res.json({ success: true });
+});
+
+// ── R2 HELPERS ────────────────────────────────────────────────────────────────
+async function uploadToR2(buffer, key, contentType, metadata = {}) {
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET, Key: key, Body: buffer,
+    ContentType: contentType, Metadata: metadata,
+  }));
+  if (R2_PUBLIC_URL) return `${R2_PUBLIC_URL.replace(/\/$/, '')}/${key}`;
+  return await getSignedUrl(r2, new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }), { expiresIn: 86400 * 7 });
+}
+
+async function deleteFromR2(key) {
+  await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+}
+
+// ── MP3 UPLOAD (per station) ──────────────────────────────────────────────────
+app.post('/api/stations/:stationId/tracks', authOwner, canAccessStation, upload.array('files', 30), async (req, res) => {
+  const { stationId } = req.params;
+  if (!req.files?.length) return res.status(400).json({ error: 'No files received' });
+  if (!R2_ENDPOINT || !R2_KEY_ID) return res.status(503).json({ error: 'R2 storage not configured' });
+
+  const station = STATIONS.find(s => s.id === stationId);
+  const results = [];
+
+  for (const file of req.files) {
+    const ext   = path.extname(file.originalname) || '.mp3';
+    const key   = `stations/${stationId}/${uuid()}${ext}`;
+    const title  = req.body.title  || path.basename(file.originalname, ext);
+    const artist = req.body.artist || station.name;
+    const genre  = req.body.genre  || station.genre;
+
+    try {
+      const url = await uploadToR2(file.buffer, key, file.mimetype, { title, artist, genre, stationId, originalName: file.originalname });
+      const track = { id: uuid(), key, title, artist, genre, stationId, size: file.size, url, uploadedAt: new Date().toISOString() };
+      if (!trackLibrary[stationId]) trackLibrary[stationId] = [];
+      trackLibrary[stationId].push(track);
+      results.push({ success: true, track });
+    } catch (err) {
+      results.push({ success: false, file: file.originalname, error: err.message });
+    }
+  }
+
+  broadcast('library_update', { stationId, tracks: trackLibrary[stationId] });
+  res.json({ success: true, uploaded: results, total: trackLibrary[stationId].length });
+});
+
+// Get tracks for a station
+app.get('/api/stations/:stationId/tracks', authOwner, canAccessStation, async (req, res) => {
+  const { stationId } = req.params;
+  // Refresh from R2 if empty
+  if (!trackLibrary[stationId]?.length && R2_ENDPOINT && R2_KEY_ID) {
+    try {
+      const data = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: `stations/${stationId}/` }));
+      trackLibrary[stationId] = await Promise.all((data.Contents || []).map(async obj => {
+        let meta = {};
+        try {
+          const head = await r2.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: obj.Key }));
+          meta = head.Metadata || {};
+        } catch {}
+        const url = R2_PUBLIC_URL ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${obj.Key}` :
+          await getSignedUrl(r2, new GetObjectCommand({ Bucket: R2_BUCKET, Key: obj.Key }), { expiresIn: 86400 * 7 });
+        return {
+          id: uuid(), key: obj.Key,
+          title: meta.title || path.basename(obj.Key, path.extname(obj.Key)),
+          artist: meta.artist || 'Unknown', genre: meta.genre || 'Various',
+          stationId, size: obj.Size, url, uploadedAt: obj.LastModified,
+        };
+      }));
+    } catch {}
+  }
+  res.json({ success: true, tracks: trackLibrary[stationId] || [], stationId });
+});
+
+// Public track list (for listeners)
+app.get('/api/public/stations/:stationId/tracks', (req, res) => {
+  const { stationId } = req.params;
+  const tracks = (trackLibrary[stationId] || []).map(t => ({
+    id: t.id, title: t.title, artist: t.artist, genre: t.genre, url: t.url, stationId: t.stationId
+  }));
+  res.json({ success: true, tracks });
+});
+
+// Delete a track
+app.delete('/api/stations/:stationId/tracks/:trackId', authOwner, canAccessStation, async (req, res) => {
+  const { stationId, trackId } = req.params;
+  const idx = (trackLibrary[stationId] || []).findIndex(t => t.id === trackId);
+  if (idx === -1) return res.status(404).json({ error: 'Track not found' });
+  const track = trackLibrary[stationId][idx];
+  try {
+    if (R2_ENDPOINT && R2_KEY_ID) await deleteFromR2(track.key);
+    trackLibrary[stationId].splice(idx, 1);
+    broadcast('library_update', { stationId, tracks: trackLibrary[stationId] });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get all tracks across all stations
+app.get('/api/admin/tracks', authAdmin, (req, res) => {
+  const all = {};
+  STATIONS.forEach(s => { all[s.id] = { station: s, tracks: trackLibrary[s.id] || [] }; });
+  res.json({ success: true, library: all });
+});
+
+// Admin: move track to different station
+app.post('/api/admin/tracks/move', authAdmin, async (req, res) => {
+  const { trackId, fromStation, toStation } = req.body;
+  if (!STATIONS.find(s=>s.id===toStation)) return res.status(400).json({ error: 'Invalid target station' });
+  const idx = (trackLibrary[fromStation] || []).findIndex(t => t.id === trackId);
+  if (idx === -1) return res.status(404).json({ error: 'Track not found' });
+  const track = trackLibrary[fromStation][idx];
+  // Move key in R2
+  const newKey = track.key.replace(`stations/${fromStation}/`, `stations/${toStation}/`);
+  try {
+    // Copy to new location
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: newKey, Body: Buffer.alloc(0),
+      CopySource: `${R2_BUCKET}/${track.key}`
+    }));
+    await deleteFromR2(track.key);
+    const url = R2_PUBLIC_URL ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${newKey}` :
+      await getSignedUrl(r2, new GetObjectCommand({ Bucket: R2_BUCKET, Key: newKey }), { expiresIn: 86400*7 });
+    const updated = { ...track, key: newKey, stationId: toStation, url };
+    trackLibrary[fromStation].splice(idx, 1);
+    if (!trackLibrary[toStation]) trackLibrary[toStation] = [];
+    trackLibrary[toStation].push(updated);
+    broadcast('library_update', { stationId: fromStation, tracks: trackLibrary[fromStation] });
+    broadcast('library_update', { stationId: toStation,   tracks: trackLibrary[toStation] });
+    res.json({ success: true, track: updated });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── SONG QUEUE (per station) ──────────────────────────────────────────────────
+app.post('/api/stations/:stationId/queue', async (req, res) => {
+  const { stationId } = req.params;
+  const { song, artist, requestedBy, trackId } = req.body;
+  if (!song) return res.status(400).json({ error: 'Song name required' });
+
+  // If trackId provided, look up URL from library
+  let trackUrl = null;
+  if (trackId) {
+    const t = (trackLibrary[stationId] || []).find(t => t.id === trackId);
+    if (t) trackUrl = t.url;
+  }
+
+  const sys = `You are VV DJ Agent for Variety Vibes Radio Hub. A listener requested a song for ${STATIONS.find(s=>s.id===stationId)?.name || stationId}.
+Reply with 1 energetic sentence starting with 🎙️.`;
+  let djMessage = `🎙️ "${song}" is locked in for ${STATIONS.find(s=>s.id===stationId)?.name}!`;
+  try {
+    djMessage = await claude(sys, `Song: "${song}" by "${artist||'unknown'}" from: ${requestedBy||'Anonymous'}`, 150);
+  } catch {}
+
+  const entry = { id: uuid(), song, artist: artist||'Unknown', requestedBy: requestedBy||'Anonymous', djMessage, status: 'queued', trackUrl, stationId, ts: new Date().toISOString() };
+  if (!songQueues[stationId]) songQueues[stationId] = [];
+  songQueues[stationId].push(entry);
+  broadcast('queue_update', { stationId, queue: songQueues[stationId], newRequest: entry });
+  res.json({ success: true, entry, djMessage });
+});
+
+app.get('/api/stations/:stationId/queue', (req, res) => res.json({ queue: songQueues[req.params.stationId] || [] }));
+app.post('/api/stations/:stationId/queue/clear', authOwner, canAccessStation, (req, res) => {
+  songQueues[req.params.stationId] = [];
+  broadcast('queue_update', { stationId: req.params.stationId, queue: [] });
+  res.json({ success: true });
+});
+app.delete('/api/stations/:stationId/queue/:id', authOwner, canAccessStation, (req, res) => {
+  const { stationId, id } = req.params;
+  songQueues[stationId] = (songQueues[stationId]||[]).filter(t=>t.id!==id);
+  broadcast('queue_update', { stationId, queue: songQueues[stationId] });
+  res.json({ success: true });
+});
+
+// ── AI HELPERS ────────────────────────────────────────────────────────────────
 async function claude(system, user, maxTokens = 600) {
   if (!ANTHROPIC_KEY) throw new Error('ANTHROPIC_API_KEY not set');
   const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -102,199 +359,63 @@ async function claude(system, user, maxTokens = 600) {
   return d.content?.[0]?.text || '';
 }
 
-// ── SONG REQUEST ──────────────────────────────────────────────────────────────
-app.post('/api/request', async (req, res) => {
-  const { song, artist, requestedBy } = req.body;
-  if (!song) return res.status(400).json({ error: 'Song name required' });
-
-  const sys = `You are VV DJ Agent for Variety Vibes Radio Hub. A listener requested a song.
-Respond with a 1-sentence energetic DJ confirmation starting with 🎙️.
-Then on a new line output: REQ:{"song":"...","artist":"...","genre":"...","vibeNote":"short dj note"}`;
-
-  let djMessage = `🎙️ "${song}" is locked in and coming your way!`;
-  let meta = { song, artist: artist || 'Unknown', genre: 'Various', vibeNote: `${song} is coming up!` };
-
-  try {
-    const reply = await claude(sys, `Song: "${song}" by "${artist || 'unknown'}" from: ${requestedBy || 'Anonymous'}`);
-    if (reply.includes('REQ:')) {
-      const [pre, json] = reply.split('REQ:');
-      djMessage = pre.trim() || djMessage;
-      try { meta = { ...meta, ...JSON.parse(json.trim()) }; } catch {}
-    } else { djMessage = reply.trim() || djMessage; }
-  } catch {}
-
-  const entry = { id: uuidv4(), ...meta, requestedBy: requestedBy || 'Anonymous', djMessage, status: 'queued', ts: new Date().toISOString() };
-  songQueue.push(entry);
-  broadcast('queue_update', { queue: songQueue, newRequest: entry });
-  res.json({ success: true, entry, djMessage });
-});
-
-// ── PLAYLIST BUILD ────────────────────────────────────────────────────────────
 app.post('/api/playlist', async (req, res) => {
-  const { vibe, genre, mood, count = 6 } = req.body;
-  const sys = `You are VV DJ for Variety Vibes Radio. Build a playlist.
-Respond with a 1-sentence DJ intro, then:
-PLAYLIST:{"title":"...","tracks":[{"song":"...","artist":"...","genre":"...","duration":"3:30"}],"djIntro":"..."}
-Include ${count} tracks.`;
+  const { vibe, genre, count = 6 } = req.body;
+  const sys = `You are VV DJ. Build a playlist. One DJ intro sentence, then: PLAYLIST:{"title":"...","tracks":[{"song":"...","artist":"...","duration":"3:30"}],"djIntro":"..."} Include ${count} tracks.`;
   try {
-    const reply = await claude(sys, `vibe="${vibe||'variety'}" genre="${genre||'mixed'}" mood="${mood||'upbeat'}"`, 900);
+    const reply = await claude(sys, `vibe="${vibe}" genre="${genre||'mixed'}"`, 900);
     let intro = '', playlist = null;
-    if (reply.includes('PLAYLIST:')) {
-      const [pre, json] = reply.split('PLAYLIST:');
-      intro = pre.trim();
-      try { playlist = JSON.parse(json.trim()); } catch {}
-    }
+    if (reply.includes('PLAYLIST:')) { const [p,j]=reply.split('PLAYLIST:'); intro=p.trim(); try{playlist=JSON.parse(j.trim());}catch{} }
     res.json({ success: true, intro, playlist });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── NEWS ──────────────────────────────────────────────────────────────────────
 app.get('/api/news', async (req, res) => {
-  if (newsCache.length && Date.now() - newsCacheAt < 5 * 60 * 1000)
-    return res.json({ success: true, news: newsCache, cached: true });
-  const sys = `You are VV News Anchor for Variety Vibes Radio.
-Generate 5 realistic music/entertainment headlines.
-Output ONLY valid JSON — no markdown:
-{"items":[{"headline":"...","source":"Billboard","time":"3 min ago","summary":"One sentence.","category":"Music"}]}`;
+  const sys = `Generate 5 current music/entertainment headlines. Output ONLY valid JSON: {"items":[{"headline":"...","source":"Billboard","time":"3 min ago","summary":"One sentence.","category":"Music"}]}`;
   try {
-    const reply = await claude(sys, 'Top 5 music and entertainment news headlines now.', 700);
-    const clean = reply.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-    newsCache   = parsed.items || [];
-    newsCacheAt = Date.now();
-    res.json({ success: true, news: newsCache });
+    const reply = await claude(sys, 'Top 5 music news headlines.', 700);
+    const parsed = JSON.parse(reply.replace(/```json|```/g,'').trim());
+    res.json({ success: true, news: parsed.items || [] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── CHAT ──────────────────────────────────────────────────────────────────────
 app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: 'Message required' });
-  const sys = `You are VV Agent, the AI DJ for Variety Vibes Radio Hub — live 24/7 online radio broadcasting worldwide from Portland, OR.
-Be warm, energetic, knowledgeable about music. 2-3 sentences max.
-Queue: ${songQueue.length} requests. ${nowPlaying ? `Now playing: "${nowPlaying.song}" by ${nowPlaying.artist}.` : ''}
-Library: ${trackLib.length} uploaded tracks.`;
-  try {
-    const reply = await claude(sys, message, 350);
-    res.json({ success: true, reply });
-  } catch { res.json({ success: true, reply: "Hey! VV Agent here — having a quick technical moment, back in a sec!" }); }
+  const { message, stationId } = req.body;
+  const station = STATIONS.find(s=>s.id===stationId) || STATIONS[0];
+  const sys = `You are VV Agent, AI DJ for ${station.name} on Variety Vibes Radio Hub. Be warm and energetic. 2-3 sentences max.`;
+  try { res.json({ success: true, reply: await claude(sys, message, 300) }); }
+  catch { res.json({ success: true, reply: "VV Agent is having a quick moment — back shortly!" }); }
 });
 
-// ── QUEUE MANAGEMENT ─────────────────────────────────────────────────────────
-app.get('/api/queue',                (req, res) => res.json({ queue: songQueue, nowPlaying }));
-app.post('/api/queue/clear',         (req, res) => { songQueue = []; nowPlaying = null; broadcast('queue_update', { queue: [] }); res.json({ success: true }); });
-app.delete('/api/queue/:id',         (req, res) => { songQueue = songQueue.filter(t => t.id !== req.params.id); broadcast('queue_update', { queue: songQueue }); res.json({ success: true }); });
-app.post('/api/queue/play/:id',      (req, res) => {
-  const t = songQueue.find(x => x.id === req.params.id);
-  if (!t) return res.status(404).json({ error: 'Not found' });
-  t.status  = 'playing';
-  nowPlaying = t;
-  broadcast('now_playing', { track: t });
-  res.json({ success: true, track: t });
+// ── STREAM PROXY ──────────────────────────────────────────────────────────────
+app.get('/api/stream', (req, res) => {
+  const target = req.query.url || STREAM_URL;
+  const parsed = new URL(target);
+  const mod = parsed.protocol === 'https:' ? https : http;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const pr = mod.get(target, { headers: { 'User-Agent': 'Mozilla/5.0', 'Icy-MetaData': '1' } }, upstream => {
+    res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
+    upstream.pipe(res);
+  });
+  pr.on('error', err => { if (!res.headersSent) res.status(502).json({ error: err.message }); });
+  req.on('close', () => pr.destroy());
 });
 
-// ── MP3 UPLOAD TO R2 ──────────────────────────────────────────────────────────
-app.post('/api/tracks/upload', upload.array('files', 20), async (req, res) => {
-  if (!req.files?.length) return res.status(400).json({ error: 'No files received' });
-  if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID) return res.status(503).json({ error: 'R2 storage not configured — add R2 env vars' });
-
-  const results = [];
-  for (const file of req.files) {
-    const ext  = path.extname(file.originalname) || '.mp3';
-    const key  = `tracks/${uuidv4()}${ext}`;
-    const title  = req.body.title  || path.basename(file.originalname, ext);
-    const artist = req.body.artist || 'Unknown Artist';
-    const genre  = req.body.genre  || 'Various';
-
-    try {
-      await r2.send(new PutObjectCommand({
-        Bucket: R2_BUCKET, Key: key,
-        Body: file.buffer, ContentType: file.mimetype,
-        Metadata: { title, artist, genre, originalName: file.originalname },
-      }));
-
-      // Build URL (use public URL if configured, else signed URL)
-      let url;
-      if (R2_PUBLIC_URL) {
-        url = `${R2_PUBLIC_URL.replace(/\/$/, '')}/${key}`;
-      } else {
-        url = await getSignedUrl(r2, new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }), { expiresIn: 86400 * 7 });
-      }
-
-      const track = { id: uuidv4(), key, title, artist, genre, size: file.size, url, uploadedAt: new Date().toISOString() };
-      trackLib.push(track);
-      results.push(track);
-    } catch (err) {
-      results.push({ error: err.message, file: file.originalname });
-    }
-  }
-
-  broadcast('library_update', { tracks: trackLib });
-  res.json({ success: true, uploaded: results, total: trackLib.length });
-});
-
-// ── GET TRACK LIBRARY ─────────────────────────────────────────────────────────
-app.get('/api/tracks', async (req, res) => {
-  // If R2 configured and library empty, try to list from bucket
-  if (trackLib.length === 0 && R2_ENDPOINT && R2_ACCESS_KEY_ID) {
-    try {
-      const data = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: 'tracks/' }));
-      trackLib = (data.Contents || []).map(obj => ({
-        id: uuidv4(), key: obj.Key,
-        title: path.basename(obj.Key, path.extname(obj.Key)),
-        artist: 'Unknown', genre: 'Various',
-        size: obj.Size, url: R2_PUBLIC_URL ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${obj.Key}` : '',
-        uploadedAt: obj.LastModified,
-      }));
-    } catch {}
-  }
-  res.json({ success: true, tracks: trackLib });
-});
-
-// ── DELETE TRACK ──────────────────────────────────────────────────────────────
-app.delete('/api/tracks/:id', async (req, res) => {
-  const track = trackLib.find(t => t.id === req.params.id);
-  if (!track) return res.status(404).json({ error: 'Track not found' });
-  try {
-    if (R2_ENDPOINT && R2_ACCESS_KEY_ID)
-      await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: track.key }));
-    trackLib = trackLib.filter(t => t.id !== req.params.id);
-    broadcast('library_update', { tracks: trackLib });
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── REQUEST TRACK FROM LIBRARY ────────────────────────────────────────────────
-app.post('/api/tracks/:id/request', async (req, res) => {
-  const track = trackLib.find(t => t.id === req.params.id);
-  if (!track) return res.status(404).json({ error: 'Track not found' });
-  const djMessage = `🎙️ "${track.title}" by ${track.artist} is next up in the queue!`;
-  const entry = { id: uuidv4(), song: track.title, artist: track.artist, genre: track.genre, requestedBy: req.body.requestedBy || 'Library', djMessage, status: 'queued', trackUrl: track.url, ts: new Date().toISOString() };
-  songQueue.push(entry);
-  broadcast('queue_update', { queue: songQueue, newRequest: entry });
-  res.json({ success: true, entry, djMessage });
-});
-
-// ── STATION SUBMISSION (email placeholder) ────────────────────────────────────
+// ── STATION SUBMISSION ────────────────────────────────────────────────────────
 app.post('/api/submit-station', async (req, res) => {
-  const { stationName, contact, email, plan } = req.body;
-  if (!stationName || !email) return res.status(400).json({ error: 'Station name and email required' });
-  // In production: send to email via SendGrid/Mailgun here
-  console.log(`📻 New station submission: ${stationName} | ${plan} | ${email}`);
-  broadcast('new_submission', { stationName, plan });
-  res.json({ success: true, message: 'Application received! We\'ll be in touch within 48 hours.' });
+  console.log(`📻 Station submission: ${req.body.stationName} | ${req.body.plan} | ${req.body.email}`);
+  res.json({ success: true });
 });
 
-// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => res.json({
-  status: 'ok', queue: songQueue.length, library: trackLib.length,
-  r2: !!R2_ENDPOINT, ai: !!ANTHROPIC_KEY, stream: STREAM_URL,
-}));
+// ── PUBLIC INFO ───────────────────────────────────────────────────────────────
+app.get('/api/stations', (req, res) => res.json({ stations: STATIONS }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', r2: !!R2_ENDPOINT, ai: !!ANTHROPIC_KEY }));
 
 server.listen(PORT, () => {
-  console.log(`\n🎙️  Variety Vibes Radio Hub`);
-  console.log(`   http://localhost:${PORT}`);
-  console.log(`   AI:     ${ANTHROPIC_KEY ? '✅ configured' : '❌ missing ANTHROPIC_API_KEY'}`);
-  console.log(`   R2:     ${R2_ENDPOINT   ? '✅ configured' : '⚠️  not configured (MP3 upload disabled)'}`);
-  console.log(`   Stream: ${STREAM_URL}\n`);
+  console.log(`\n🎙️  Variety Vibes Radio Hub v2.0`);
+  console.log(`   Main:  http://localhost:${PORT}`);
+  console.log(`   Admin: http://localhost:${PORT}/admin`);
+  console.log(`   AI:    ${ANTHROPIC_KEY ? '✅' : '❌ missing ANTHROPIC_API_KEY'}`);
+  console.log(`   R2:    ${R2_ENDPOINT   ? '✅' : '⚠️  not configured'}\n`);
+  console.log(`   Admin password: ${ADMIN_PASS}`);
 });
