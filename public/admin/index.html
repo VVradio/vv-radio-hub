@@ -280,7 +280,7 @@
 let token = localStorage.getItem('vv_admin_token') || '';
 let userRole = '', userStationId = '', pendingFiles = [], selectedUploadStation = '', selectedLibStation = '';
 
-const STATIONS = [];
+const STATIONS = [];`nconst API = window.location.origin;
 
 // ── AUTH ──
 function setLoginMode(mode, btn) {
@@ -293,7 +293,7 @@ function setLoginMode(mode, btn) {
 async function adminLogin() {
   const pass = document.getElementById('adminPass').value;
   try {
-    const r = await fetch('/api/auth/admin-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pass }) });
+    const r = await fetch(API+'/api/auth/admin-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pass }) });
     const d = await r.json();
     if (!d.success) { document.getElementById('loginErr').textContent = d.error; return; }
     token = d.token; userRole = 'admin';
@@ -306,7 +306,7 @@ async function ownerLogin() {
   const email = document.getElementById('ownerEmail').value;
   const pass  = document.getElementById('ownerPass').value;
   try {
-    const r = await fetch('/api/auth/owner-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pass }) });
+    const r = await fetch(API+'/api/auth/owner-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pass }) });
     const d = await r.json();
     if (!d.success) { document.getElementById('loginErr').textContent = d.error; return; }
     token = d.token; userRole = 'owner'; userStationId = d.stationId;
@@ -325,7 +325,7 @@ async function initAdmin(ownerData=null) {
   document.getElementById('adminWrap').style.display = 'block';
 
   // Load stations
-  const r = await fetch('/api/stations');
+  const r = await fetch(API+'/api/stations');
   const d = await r.json();
   STATIONS.length = 0;
   STATIONS.push(...d.stations);
@@ -360,7 +360,7 @@ async function initAdmin(ownerData=null) {
   if (!token) return;
   try {
     // Verify by calling a protected endpoint
-    const r = await fetch('/api/stations');
+    const r = await fetch(API+'/api/stations');
     const d = await r.json();
     if (d.stations) {
       // Decode role from token (basic decode, no verify — server verifies on each call)
@@ -530,7 +530,7 @@ async function deleteTrack(stationId, trackId, title) {
 async function loadOwners() {
   if(userRole!=='admin') return;
   try {
-    const r=await fetch('/api/admin/owners',{headers:authHeaders()});
+    const r=await fetch(API+'/api/admin/owners',{headers:authHeaders()});
     const d=await r.json();
     const el=document.getElementById('ownersContent');
     if(!d.owners.length){ el.innerHTML='<div class="empty">No station owner accounts yet.</div>'; return; }
@@ -547,7 +547,7 @@ async function createOwner() {
   const stationId=document.getElementById('oStation').value;
   if(!name||!email||!pass||!stationId){ setStatus('ownerStatus','err','All fields are required'); return; }
   try {
-    const r=await fetch('/api/admin/owners',{method:'POST',headers:authHeaders(),body:JSON.stringify({name,email,password:pass,stationId})});
+    const r=await fetch(API+'/api/admin/owners',{method:'POST',headers:authHeaders(),body:JSON.stringify({name,email,password:pass,stationId})});
     const d=await r.json();
     if(d.success){ setStatus('ownerStatus','ok','✅ '+d.message); document.getElementById('oName').value=''; document.getElementById('oEmail').value=''; document.getElementById('oPass').value=''; loadOwners(); }
     else setStatus('ownerStatus','err','⚠️ '+d.error);
