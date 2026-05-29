@@ -620,7 +620,7 @@ function renderStations(){
     grid.appendChild(el);
   });
   grid.querySelectorAll('.bfv').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=+b.dataset.id;favs.has(id)?favs.delete(id):favs.add(id);renderStations();}));
-  grid.querySelectorAll('.bls').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const st=stations.find(s=>s.id===+b.dataset.id);if(activeSt.id===st.id&&isPlaying){stopStream();return;}activeSt=st;updBarSt(st);if(st.url)playStream(st.url);else playStationLibrary(st.id);}));
+  grid.querySelectorAll('.bls').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const st=stations.find(s=>s.id===+b.dataset.id);if(activeSt.id===st.id&&isPlaying){stopStream();return;}activeSt=st;updBarSt(st);if(st.url)playStream(st.url);else playStationLibrary(st.genre);}));
 }
 function updBarSt(s){document.getElementById('barBadge').style.background=s.bg;document.getElementById('barBadge').style.color=s.c;document.getElementById('barBadge').textContent=s.abbr;document.getElementById('barSong').textContent=s.name;document.getElementById('barMeta').textContent=s.gl+' · Live 24/7';}
 function updBarUI(){document.getElementById('barPlayIcon').innerHTML=isPlaying?`<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`:`<polygon points="5 3 19 12 5 21 5 3"/>`;}
