@@ -587,7 +587,7 @@ function playTrackFromLibrary(){
   playTrack(t.url,t.title,t.artist);
 }
 
-audio.addEventListener('ended',()=>{
+audio.addEventListener('ended',async()=>{
   if(currentLibrary.length>0){
     currentTrackIndex=Math.floor(Math.random()*currentLibrary.length);
     playTrackFromLibrary();
