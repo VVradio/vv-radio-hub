@@ -651,7 +651,7 @@ function renderStations(){
 function updBarSt(s){document.getElementById('barBadge').style.background=s.bg;document.getElementById('barBadge').style.color=s.c;document.getElementById('barBadge').textContent=s.abbr;document.getElementById('barSong').textContent=s.name;document.getElementById('barMeta').textContent=s.gl+' · Live 24/7';}
 function updBarUI(){document.getElementById('barPlayIcon').innerHTML=isPlaying?`<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`:`<polygon points="5 3 19 12 5 21 5 3"/>`;}
 document.getElementById('barPlay').addEventListener('click',()=>{if(isPlaying)stopStream();else{activeSt=stations[0];updBarSt(activeSt);playStream(VVR_STREAM);}});
-document.getElementById('barNext').addEventListener('click',()=>{const i=stations.indexOf(activeSt);activeSt=stations[(i+1)%stations.length];updBarSt(activeSt);if(activeSt.url)playStream(activeSt.url);});
+document.getElementById('barNext').addEventListener('click',()=>{if(currentLibrary.length>0){currentTrackIndex=Math.floor(Math.tions.length];updBarSt(activeSt);if(activeSt.url)playStream(activeSt.url);});
 document.getElementById('barPrev').addEventListener('click',()=>{const i=stations.indexOf(activeSt);activeSt=stations[(i-1+stations.length)%stations.length];updBarSt(activeSt);if(activeSt.url)playStream(activeSt.url);});
 document.getElementById('genrePills').addEventListener('click',e=>{if(e.target.classList.contains('pill')){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));e.target.classList.add('active');activeGenre=e.target.dataset.genre;renderStations();}});
 document.getElementById('searchInput').addEventListener('input',e=>{search=e.target.value.toLowerCase().trim();renderStations();});
