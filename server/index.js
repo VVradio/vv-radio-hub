@@ -213,7 +213,8 @@ app.post('/api/stations/:stationId/tracks', authOwner, canAccessStation, upload.
       trackLibrary[stationId].push(track);
       results.push({ success: true, track });
     } catch (err) {
-      results.push({ success: false, file: file.originalname, error: err.message });
+      console.error('Upload error:', err);
+results.push({ success: false, file: file.originalname, error: err.message });
     }
   }
 
