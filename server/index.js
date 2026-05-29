@@ -410,6 +410,16 @@ app.post('/api/submit-station', async (req, res) => {
 
 // ── PUBLIC INFO ───────────────────────────────────────────────────────────────
 app.get('/api/stations', (req, res) => res.json({ stations: STATIONS }));
+app.get('/api/admin/fix-urls', authAdmin, (req, res) => {
+  let fixed = 0;
+  Object.keys(trackLibrary).forEach(stationId => {
+    trackLibrary[stationId] = trackLibrary[stationId].map(t => {
+      if (t.url && t.url.includes('\n')) { t.url = t.url.replace(/\n/g, ''); fixed++; }
+      return t;
+    });
+  });
+  res.json({ success: true, fixed });
+});
 app.get('/api/health', (req, res) => res.json({ status: 'ok', r2: !!R2_ENDPOINT, ai: !!ANTHROPIC_KEY }));
 
 server.listen(PORT, () => {
