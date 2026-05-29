@@ -1,6 +1,7 @@
 {
   "name": "vv-radio-hub",
   "version": "1.0.0",
+"engines": {"node": ">=20.0.0"},
   "description": "Variety Vibes Radio Hub — Full Stack",
   "main": "server/index.js",
   "scripts": {
