@@ -56,7 +56,7 @@ let trackLibrary  = {};
 let songQueues    = {};
 let allClients    = new Set();
 
-STATIONS.forEach(s => { trackLibrary[s.id] = []; songQueues[s.id] = []; });
+STATIONS.forEach(s => { trackLibrary[s.id] = []; songQueues[s.id] = []; })loadLibraryFromR2
 
 // ── EXPRESS + WS ──────────────────────────────────────────────────────────────
 const app    = express();
