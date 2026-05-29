@@ -589,7 +589,7 @@ function playTrackFromLibrary(){
 
 audio.addEventListener('ended',()=>{
   if(currentLibrary.length>0){
-    currentTrackIndex=(currentTrackIndex+1)%currentLibrary.length;
+    currentTrackIndex=Math.floor(Math.random()*currentLibrary.length);
     playTrackFromLibrary();
   }
 });{
