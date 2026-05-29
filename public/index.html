@@ -592,7 +592,7 @@ audio.addEventListener('ended',async()=>{
     currentTrackIndex=Math.floor(Math.random()*currentLibrary.length);
     playTrackFromLibrary();
   }
-});{
+});
   setSts('buf','Loading tracks...');
   try{
     const r=await fetch('/api/public/stations/'+stationId+'/tracks');
