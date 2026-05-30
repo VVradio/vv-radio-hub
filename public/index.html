@@ -610,7 +610,7 @@ function renderStations(){
     var st=stations.find(function(s){return s.id===+b.dataset.id;});
     if(activeSt.id===st.id&&isPlaying){stopStream();return;}
     activeSt=st; updBarSt(st);
-    if(st.url) playStream(st.url);
+   activeSt=st; updBarSt(st); isPlaying=false; updBarUI();
     else { currentLibrary=[]; playStationLibrary(st.genre); }
   });});
 }
