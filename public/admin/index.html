@@ -513,6 +513,7 @@ function renderTrackTable(tracks, stationId) {
 
 let previewAudio = null;
 function playPreview(url) {
+  if(previewAudio && !previewAudio.paused){ previewAudio.pause(); previewAudio=null; return; }
   if(previewAudio){ previewAudio.pause(); previewAudio=null; }
   previewAudio=new Audio(url); previewAudio.volume=0.8; previewAudio.play();
 }
