@@ -496,7 +496,7 @@ const audio=document.getElementById('radioAudio');
 let ws=null;
 function connectWS(){
   const proto=location.protocol==='https:'?'wss:':'ws:';
-  ws=new WebSocket(proto+'//'+location.host);
+ ws=new WebSocket(proto+'//'+(location.host||'vv-radio-hub-production.up.railway.app'));
   ws.onopen=()=>console.log('WS connected');
   ws.onclose=()=>setTimeout(connectWS,3000);
   ws.onerror=()=>{};
