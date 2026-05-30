@@ -609,9 +609,9 @@ function renderStations(){
     e.stopPropagation();
     var st=stations.find(function(s){return s.id===+b.dataset.id;});
     if(activeSt.id===st.id&&isPlaying){stopStream();return;}
-    activeSt=st; updBarSt(st);
    activeSt=st; updBarSt(st); isPlaying=false; updBarUI();
-   else { currentLibrary=[]; playStationLibrary(st.stationKey||st.genre); }
+    if(st.url) playStream(st.url);
+    else { currentLibrary=[]; playStationLibrary(st.stationKey||st.genre); }
   });});
 }
 
