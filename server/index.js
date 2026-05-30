@@ -59,6 +59,21 @@ let newsCacheAt = 0;
 let allClients    = new Set();
 
 STATIONS.forEach(s => { trackLibrary[s.id] = []; songQueues[s.id] = []; });
+async function loadLibraryFromR2() {
+  if (!R2_ENDPOINT || !R2_KEY_ID) return;
+  for (const s of STATIONS) {
+    try {
+      const data = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: `stations/${s.id}/` }));
+      if (!data.Contents?.length) continue;
+      trackLibrary[s.id] = data.Contents.map(obj => {
+        const url = (R2_PUBLIC_URL.replace(/\/$/, '') + '/' + obj.Key).replace(/\n/g, '');
+        return { id: uuid(), key: obj.Key, title: path.basename(obj.Key, path.extname(obj.Key)), artist: 'Unknown', genre: 'Various', stationId: s.id, size: obj.Size, url, uploadedAt: obj.LastModified };
+      });
+      console.log('Loaded ' + trackLibrary[s.id].length + ' tracks for ' + s.name);
+    } catch(e) { console.error('R2 load error for ' + s.id + ':', e.message); }
+  }
+}
+loadLibraryFromR2();
 
 // ── EXPRESS + WS ──────────────────────────────────────────────────────────────
 const app    = express();
