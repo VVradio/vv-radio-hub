@@ -475,15 +475,15 @@
 const VVR_STREAM = 'https://hello.citrus3.com:2020/stream/varietyvibesradio';
 
 const stations = [
-  {id:1,abbr:'VV',name:'Variety Vibes Radio',genre:'indie',gl:'Indie / Multi-genre',song:'Artist submissions 24/7',listeners:'1.2k',bg:'#2a1a4a',c:'#c47bff',url:VVR_STREAM},
-  {id:2,abbr:'HH',name:'Hip Hop Heat',genre:'hiphop',gl:'Hip Hop / Rap',song:'Latest Hip Hop Hits',listeners:'3.1k',bg:'#3d1414',c:'#e87b7b',url:''},
-  {id:3,abbr:'DH',name:'Deep House Nation',genre:'electronic',gl:'Electronic / Dance',song:'Deep House Mix',listeners:'2.6k',bg:'#1a1a4a',c:'#7b9be8',url:''},
-  {id:4,abbr:'GG',name:'Gospel Glory',genre:'gospel',gl:'Gospel / Christian',song:'Inspirational Gospel',listeners:'890',bg:'#143d22',c:'#7be87b',url:''},
-  {id:5,abbr:'OS',name:'Old School Jams',genre:'rnb',gl:'R&B / Soul',song:'Classic R&B & Soul',listeners:'1.7k',bg:'#3d1414',c:'#e87b7b',url:''},
- {id:6,abbr:'SV',name:'Soul Vibes R&B',genre:'rnb',gl:'R&B / Soul',song:"Today's Best R&B",listeners:'2.2k',bg:'#3d1414',c:'#e87b7b',url:''},
-  {id:7,abbr:'PN',name:'Pop Nation',genre:'pop',gl:'Pop / Top 40',song:'Top 40 Hits',listeners:'5.1k',bg:'#1a2a4a',c:'#7bc0e8',url:''},
-  {id:8,abbr:'CR',name:'Country Roads FM',genre:'country',gl:'Country',song:'Classic & New Country',listeners:'1.4k',bg:'#1e2e14',c:'#a0c870',url:''},
-  {id:9,abbr:'RF',name:'Rock Frequency',genre:'rock',gl:'Rock',song:'Classic Rock Hits',listeners:'2.8k',bg:'#2e1e14',c:'#e8a87b',url:''},
+  {id:1,abbr:'VV',name:'Variety Vibes Radio',genre:'indie',gl:'Indie / Multi-genre',song:'Artist submissions 24/7',listeners:'1.2k',bg:'#2a1a4a',c:'#c47bff',url:VVR_STREAM,stationKey:'vvr'},
+  {id:2,abbr:'HH',name:'Hip Hop Heat',genre:'hiphop',gl:'Hip Hop / Rap',song:'Latest Hip Hop Hits',listeners:'3.1k',bg:'#3d1414',c:'#e87b7b',url:'',stationKey:'hiphop'},
+  {id:3,abbr:'DH',name:'Deep House Nation',genre:'electronic',gl:'Electronic / Dance',song:'Deep House Mix',listeners:'2.6k',bg:'#1a1a4a',c:'#7b9be8',url:'',stationKey:'deepho'},
+  {id:4,abbr:'GG',name:'Gospel Glory',genre:'gospel',gl:'Gospel / Christian',song:'Inspirational Gospel',listeners:'890',bg:'#143d22',c:'#7be87b',url:'',stationKey:'gospel'},
+  {id:5,abbr:'OS',name:'Old School Jams',genre:'rnb',gl:'R&B / Soul',song:'Classic R&B & Soul',listeners:'1.7k',bg:'#3d1414',c:'#e87b7b',url:'',stationKey:'oldsch'},
+  {id:6,abbr:'SV',name:'Soul Vibes R&B',genre:'rnb',gl:'R&B / Soul',song:"Today's Best R&B",listeners:'2.2k',bg:'#3d1414',c:'#e87b7b',url:'',stationKey:'soullvb'},
+  {id:7,abbr:'PN',name:'Pop Nation',genre:'pop',gl:'Pop / Top 40',song:'Top 40 Hits',listeners:'5.1k',bg:'#1a2a4a',c:'#7bc0e8',url:'',stationKey:'popnat'},
+  {id:8,abbr:'CR',name:'Country Roads FM',genre:'country',gl:'Country',song:'Classic & New Country',listeners:'1.4k',bg:'#1e2e14',c:'#a0c870',url:'',stationKey:'country'},
+  {id:9,abbr:'RF',name:'Rock Frequency',genre:'rock',gl:'Rock',song:'Classic Rock Hits',listeners:'2.8k',bg:'#2e1e14',c:'#e8a87b',url:'',stationKey:'rockfq'},
 ];
 
 let activeGenre='all', activeSt=stations[0], isPlaying=false;
