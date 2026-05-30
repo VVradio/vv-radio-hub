@@ -611,7 +611,7 @@ function renderStations(){
     if(activeSt.id===st.id&&isPlaying){stopStream();return;}
     activeSt=st; updBarSt(st);
    activeSt=st; updBarSt(st); isPlaying=false; updBarUI();
-    else { currentLibrary=[]; playStationLibrary(st.genre); }
+   else { currentLibrary=[]; playStationLibrary(st.stationKey||st.genre); }
   });});
 }
 
