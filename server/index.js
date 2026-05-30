@@ -54,6 +54,8 @@ let stationOwners = {};
 let trackLibrary  = {};
 // songQueue per station
 let songQueues    = {};
+let newsCache = [];
+let newsCacheAt = 0;
 let allClients    = new Set();
 
 STATIONS.forEach(s => { trackLibrary[s.id] = []; songQueues[s.id] = []; });
