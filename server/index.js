@@ -67,7 +67,7 @@ async function loadLibraryFromR2() {
       if (!data.Contents?.length) continue;
       trackLibrary[s.id] = data.Contents.map(obj => {
         const url = (R2_PUBLIC_URL.replace(/\/$/, '') + '/' + obj.Key).replace(/\n/g, '');
-        return { id: uuid(), key: obj.Key, title: path.basename(obj.Key, path.extname(obj.Key)), artist: 'Unknown', genre: 'Various', stationId: s.id, size: obj.Size, url, uploadedAt: obj.LastModified };
+        return { id: uuid(), key: obj.Key, title: path.basename(obj.Key, path.extname(obj.Key)).replace(/-/g," "), artist: s.name, genre: s.genre, stationId: s.id, size: obj.Size, url, uploadedAt: obj.LastModified };
       });
       console.log('Loaded ' + trackLibrary[s.id].length + ' tracks for ' + s.name);
     } catch(e) { console.error('R2 load error for ' + s.id + ':', e.message); }
@@ -458,3 +458,4 @@ server.listen(PORT, () => {
   console.log(`   R2:    ${R2_ENDPOINT   ? '✅' : '⚠️  not configured'}\n`);
   console.log(`   Admin password: ${ADMIN_PASS}`);
 });
+
