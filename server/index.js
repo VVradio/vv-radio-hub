@@ -372,11 +372,22 @@ app.post('/api/playlist', async (req, res) => {
 });
 
 app.get('/api/news', async (req, res) => {
-  const sys = `Generate 5 current music/entertainment headlines. Output ONLY valid JSON: {"items":[{"headline":"...","source":"Billboard","time":"3 min ago","summary":"One sentence.","category":"Music"}]}`;
+  if (newsCache.length && Date.now() - newsCacheAt < 5 * 60 * 1000)
+    return res.json({ success: true, news: newsCache, cached: true });
   try {
-    const reply = await claude(sys, 'Top 5 music news headlines.', 700);
-    const parsed = JSON.parse(reply.replace(/```json|```/g,'').trim());
-    res.json({ success: true, news: parsed.items || [] });
+    const r = await fetch(`https://newsapi.org/v2/everything?q=music+entertainment&sortBy=publishedAt&pageSize=5&apiKey=${process.env.NEWS_API_KEY}`);
+    const d = await r.json();
+    const news = (d.articles || []).map(a => ({
+      headline: a.title,
+      source: a.source?.name || 'News',
+      time: new Date(a.publishedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      summary: a.description || '',
+      category: 'Music',
+      url: a.url
+    }));
+    newsCache = news;
+    newsCacheAt = Date.now();
+    res.json({ success: true, news });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
