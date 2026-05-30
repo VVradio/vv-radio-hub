@@ -331,10 +331,18 @@ app.post('/api/stations/:stationId/queue', async (req, res) => {
   if (!song) return res.status(400).json({ error: 'Song name required' });
 
   // If trackId provided, look up URL from library
-  let trackUrl = null;
+ let trackUrl = null;
   if (trackId) {
     const t = (trackLibrary[stationId] || []).find(t => t.id === trackId);
     if (t) trackUrl = t.url;
+  }
+  // Auto-match song from library
+  if (!trackUrl && song) {
+    const match = (trackLibrary[stationId] || []).find(t =>
+      t.title.toLowerCase().includes(song.toLowerCase()) ||
+      song.toLowerCase().includes(t.title.toLowerCase())
+    );
+    if (match) trackUrl = match.url;
   }
 
   const sys = `You are VV DJ Agent for Variety Vibes Radio Hub. A listener requested a song for ${STATIONS.find(s=>s.id===stationId)?.name || stationId}.
