@@ -839,7 +839,8 @@ function buildReqForm(){
 
 function handleRequest(song,artist,requestedBy){
   showTyping();
-  return fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({song:song,artist:artist,requestedBy:requestedBy})})
+  var stId=activeSt.stationKey||activeSt.genre||'vvr';
+  return fetch('/api/stations/'+stId+'/queue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({song:song,artist:artist,requestedBy:requestedBy})})
     .then(function(r){return r.json();})
     .then(function(d){
       hideTyping();
