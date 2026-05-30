@@ -593,15 +593,7 @@ audio.addEventListener('ended',async()=>{
     playTrackFromLibrary();
   }
 });
-  setSts('buf','Loading tracks...');
-  try{
-    const r=await fetch('/api/public/stations/'+stationId+'/tracks');
-    const d=await r.json();
-    if(!d.tracks||!d.tracks.length){setSts('err','No tracks uploaded yet');return;}
-    const t=d.tracks[0];
-    playTrack(t.url,t.title,t.artist);
-  }catch{setSts('err','Could not load tracks');}
-}function playStream(url){
+function playStream(url){
   setSts('buf','Connecting...');
   audio.src=url; audio.load();
   audio.play().then(()=>{setSts('live','Live');isPlaying=true;updBarUI();renderStations();})
