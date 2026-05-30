@@ -846,8 +846,13 @@ function handleRequest(song,artist,requestedBy){
       hideTyping();
       var msg=d.djMessage||'🎙️ "'+song+'" is queued!';
       addMsg('a',msg); speak(msg,'dj');
+      if(d.entry&&d.entry.trackUrl){
+        currentLibrary=[{url:d.entry.trackUrl,title:d.entry.song,artist:d.entry.artist}];
+        currentTrackIndex=0;
+        playTrackFromLibrary();
+      }
     })
-    .catch(function(){
+ch(function(){
       hideTyping();
       var msg='🎙️ "'+song+'" is queued — coming your way!';
       addToQueue(song,artist,requestedBy,msg);
